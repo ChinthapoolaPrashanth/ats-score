@@ -1,19 +1,23 @@
 // API key management
-let OPENAI_API_KEY = '';
 const MODEL_NAME = 'gpt-3.5-turbo';
+let OPENAI_API_KEY = '';
 
-// Load API key from localStorage if available
-if (typeof localStorage !== 'undefined') {
-    OPENAI_API_KEY = localStorage.getItem('openai_api_key') || '';
-    
-    // If no API key is found, prompt the user
-    if (!OPENAI_API_KEY) {
+// Try to load API key from environment variable or prompt user
+if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
+    // For Node.js environment
+    OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+} else if (typeof window !== 'undefined') {
+    // For browser environment
+    const storedKey = localStorage.getItem('openai_api_key');
+    if (storedKey) {
+        OPENAI_API_KEY = storedKey;
+    } else {
         const apiKey = prompt('Please enter your OpenAI API key:');
         if (apiKey) {
             OPENAI_API_KEY = apiKey;
             localStorage.setItem('openai_api_key', apiKey);
         } else {
-            alert('An OpenAI API key is required to use this application. Please refresh the page and enter your API key when prompted.');
+            alert('An API key is required to use this application. Please refresh the page to enter your key.');
         }
     }
 }
