@@ -2,24 +2,34 @@
 const MODEL_NAME = 'gpt-3.5-turbo';
 let OPENAI_API_KEY = '';
 
-// Try to load API key from environment variable or prompt user
-if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
-    // For Node.js environment
-    OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-} else if (typeof window !== 'undefined') {
-    // For browser environment
+// Function to set API key
+function setApiKey(key) {
+    OPENAI_API_KEY = key.trim();
+    if (typeof window !== 'undefined' && key) {
+        localStorage.setItem('openai_api_key', key);
+    }
+}
+
+// Load API key in this order:
+// 1. From localStorage (browser)
+// 2. From environment variable (Node.js)
+// 3. Prompt the user (if in browser)
+if (typeof window !== 'undefined') {
+    // Browser environment - check for key in localStorage
     const storedKey = localStorage.getItem('openai_api_key');
     if (storedKey) {
-        OPENAI_API_KEY = storedKey;
+        setApiKey(storedKey);
     } else {
         const apiKey = prompt('Please enter your OpenAI API key:');
         if (apiKey) {
-            OPENAI_API_KEY = apiKey;
-            localStorage.setItem('openai_api_key', apiKey);
+            setApiKey(apiKey);
         } else {
-            alert('An API key is required to use this application. Please refresh the page to enter your key.');
+            alert('An API key is required for this application to work. Please refresh the page to enter your key.');
         }
     }
+} else if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
+    // Node.js environment
+    setApiKey(process.env.OPENAI_API_KEY);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
