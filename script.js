@@ -1,5 +1,5 @@
 // API key management
-const MODEL_NAME = 'gpt-3.5-turbo';
+const MODEL_NAME = 'gpt-4';
 let OPENAI_API_KEY = '';
 
 // Function to set API key
@@ -10,26 +10,12 @@ function setApiKey(key) {
     }
 }
 
-// Load API key in this order:
-// 1. From localStorage (browser)
-// 2. From environment variable (Node.js)
-// 3. Prompt the user (if in browser)
+// Load API key from localStorage
 if (typeof window !== 'undefined') {
-    // Browser environment - check for key in localStorage
     const storedKey = localStorage.getItem('openai_api_key');
     if (storedKey) {
         setApiKey(storedKey);
-    } else {
-        const apiKey = prompt('Please enter your OpenAI API key:');
-        if (apiKey) {
-            setApiKey(apiKey);
-        } else {
-            alert('An API key is required for this application to work. Please refresh the page to enter your key.');
-        }
     }
-} else if (typeof process !== 'undefined' && process.env.OPENAI_API_KEY) {
-    // Node.js environment
-    setApiKey(process.env.OPENAI_API_KEY);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,26 +23,201 @@ document.addEventListener('DOMContentLoaded', function() {
     const resumeText = document.getElementById('resumeText');
     const jobDescription = document.getElementById('jobDescription');
     const analyzeBtn = document.getElementById('analyzeBtn');
-    const resultDiv = document.getElementById('result');
     const loadingDiv = document.getElementById('loading');
     const apiKeyInput = document.getElementById('apiKey');
+    const saveApiKeyBtn = document.getElementById('saveApiKey');
     const scoreElement = document.getElementById('score');
+    const scoreRing = document.getElementById('scoreRing');
+    const scoreLabel = document.getElementById('scoreLabel');
+    const scoreDescription = document.getElementById('scoreDescription');
     const analysisText = document.getElementById('analysisText');
     const suggestionsText = document.getElementById('suggestionsText');
     const resumeFileInput = document.getElementById('resumeFile');
     const jobDescriptionFileInput = document.getElementById('jobDescriptionFile');
-    const enhancedResumeTextarea = document.getElementById('enhancedResume');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const resumeCharCount = document.getElementById('resumeCharCount');
+    const jobCharCount = document.getElementById('jobCharCount');
+    const pageTitle = document.getElementById('pageTitle');
+    const menuToggle = document.getElementById('menuToggle');
+    const sidebar = document.querySelector('.sidebar');
+
+    // Navigation elements
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentSections = document.querySelectorAll('.content-section');
 
     // DOM Elements for file names
     const resumeFileName = document.getElementById('resumeFileName');
     const jobDescriptionFileName = document.getElementById('jobDescriptionFileName');
 
+    // Initialize character counters
+    updateCharCount(resumeText, resumeCharCount);
+    updateCharCount(jobDescription, jobCharCount);
+
     // Event Listeners
     analyzeBtn.addEventListener('click', analyzeResume);
-    downloadBtn.addEventListener('click', downloadEnhancedResume);
+    saveApiKeyBtn.addEventListener('click', saveApiKey);
     resumeFileInput.addEventListener('change', (e) => handleFileUpload(e, resumeFileInput, resumeText, resumeFileName));
     jobDescriptionFileInput.addEventListener('change', (e) => handleFileUpload(e, jobDescriptionFileInput, jobDescription, jobDescriptionFileName));
+    
+    // Character counter listeners
+    resumeText.addEventListener('input', () => updateCharCount(resumeText, resumeCharCount));
+    jobDescription.addEventListener('input', () => updateCharCount(jobDescription, jobCharCount));
+
+    // Navigation listeners
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const section = item.getAttribute('data-section');
+            navigateToSection(section);
+        });
+    });
+
+    // Mobile menu toggle
+    menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+    });
+
+    // Scroll button functionality
+    setupScrollButtons();
+
+    // Load saved API key into input
+    if (OPENAI_API_KEY) {
+        apiKeyInput.value = OPENAI_API_KEY;
+    }
+
+    // Function to navigate between sections
+    function navigateToSection(sectionName) {
+        // Update navigation
+        navItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-section') === sectionName) {
+                item.classList.add('active');
+            }
+        });
+
+        // Update content sections
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+            if (section.id === sectionName + 'Section') {
+                section.classList.add('active');
+            }
+        });
+
+        // Update page title
+        const titles = {
+            'upload': 'Upload Content',
+            'results': 'Analysis Results',
+            'api': 'API Configuration'
+        };
+        pageTitle.textContent = titles[sectionName] || 'ATS Pro';
+
+        // Close mobile menu
+        sidebar.classList.remove('open');
+    }
+
+    // Function to update character count
+    function updateCharCount(textarea, counterElement) {
+        const count = textarea.value.length;
+        counterElement.textContent = count.toLocaleString() + ' characters';
+        
+        // Change color based on content length
+        if (count === 0) {
+            counterElement.style.color = 'var(--text-tertiary)';
+        } else if (count < 100) {
+            counterElement.style.color = 'var(--warning-600)';
+        } else if (count < 500) {
+            counterElement.style.color = 'var(--primary-600)';
+        } else {
+            counterElement.style.color = 'var(--success-600)';
+        }
+    }
+
+    // Function to setup scroll buttons
+    function setupScrollButtons() {
+        const textareas = [resumeText, jobDescription];
+        
+        textareas.forEach(textarea => {
+            const container = textarea.parentElement;
+            const scrollUpBtn = container.querySelector('.scroll-up');
+            const scrollDownBtn = container.querySelector('.scroll-down');
+            
+            if (scrollUpBtn && scrollDownBtn) {
+                scrollUpBtn.addEventListener('click', () => {
+                    textarea.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                });
+                
+                scrollDownBtn.addEventListener('click', () => {
+                    textarea.scrollTo({
+                        top: textarea.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                });
+                
+                // Show/hide scroll buttons based on content
+                textarea.addEventListener('scroll', () => {
+                    const showUp = textarea.scrollTop > 50;
+                    const showDown = textarea.scrollTop < (textarea.scrollHeight - textarea.clientHeight - 50);
+                    
+                    scrollUpBtn.style.opacity = showUp ? '1' : '0.5';
+                    scrollDownBtn.style.opacity = showDown ? '1' : '0.5';
+                });
+                
+                // Initial check
+                textarea.dispatchEvent(new Event('scroll'));
+            }
+        });
+    }
+
+    // Function to save API key
+    function saveApiKey() {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            setApiKey(key);
+            showNotification('API key saved successfully!', 'success');
+        } else {
+            showNotification('Please enter a valid API key', 'error');
+        }
+    }
+
+    // Function to show notifications
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        // Add styles
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            ${type === 'success' ? 'background: var(--success-600);' : 
+              type === 'error' ? 'background: var(--error-600);' : 
+              'background: var(--primary-600);'}
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 300);
+        }, 3000);
+    }
 
     // Handle file uploads
     async function handleFileUpload(event, input, textarea, fileNameElement) {
@@ -66,14 +227,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update file name display
         const fileName = file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name;
         fileNameElement.textContent = fileName;
-        fileNameElement.style.color = '#28a745';
+        fileNameElement.style.color = 'var(--success-600)';
         fileNameElement.style.fontWeight = '500';
         fileNameElement.title = file.name; // Show full name on hover
 
         // Show loading state for file processing
         const originalText = fileNameElement.textContent;
         fileNameElement.textContent = 'Processing...';
-        fileNameElement.style.color = '#6c757d';
+        fileNameElement.style.color = 'var(--text-tertiary)';
 
         try {
             const text = await readFileAsText(file);
@@ -81,26 +242,32 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the textarea with the file content or message
             textarea.value = typeof text === 'string' ? text : 'Could not read file content';
             
+            // Update character count
+            updateCharCount(textarea, textarea === resumeText ? resumeCharCount : jobCharCount);
+            
             // Show appropriate message based on file type
             const fileExt = file.name.split('.').pop().toLowerCase();
             const unsupportedTypes = ['pdf', 'docx', 'doc'];
             
             if (unsupportedTypes.includes(fileExt)) {
-                fileNameElement.style.color = '#ffc107'; // Yellow for warning
+                fileNameElement.style.color = 'var(--warning-600)'; // Yellow for warning
                 fileNameElement.textContent = `${fileExt.toUpperCase()} - ${fileName}`;
             } else {
                 fileNameElement.textContent = fileName;
-                fileNameElement.style.color = '#28a745'; // Green for success
+                fileNameElement.style.color = 'var(--success-600)'; // Green for success
             }
             
             // Auto-expand textarea to fit content
             textarea.style.height = 'auto';
             textarea.style.height = (textarea.scrollHeight) + 'px';
             
+            // Trigger scroll event to update scroll buttons
+            textarea.dispatchEvent(new Event('scroll'));
+            
         } catch (error) {
             console.error('Error reading file:', error);
             fileNameElement.textContent = `Error: ${file.name}`;
-            fileNameElement.style.color = '#dc3545';
+            fileNameElement.style.color = 'var(--error-600)';
             
             // Show error message in the textarea
             textarea.value = 'Error: Could not read file. Please try another file or paste the text manually.';
@@ -165,72 +332,39 @@ document.addEventListener('DOMContentLoaded', function() {
         const jobDesc = jobDescription.value.trim();
 
         if (!resume || !jobDesc) {
-            alert('Please provide both resume and job description.');
+            showNotification('Please provide both resume and job description.', 'error');
             return;
         }
 
-        // Prompt for API key if not set
-        if (!OPENAI_API_KEY) {
-            OPENAI_API_KEY = prompt('Please enter your OpenAI API key:');
-            if (!OPENAI_API_KEY) {
-                alert('API key is required to analyze the resume.');
-                return;
-            }
-            // Save to localStorage for future use
-            if (typeof localStorage !== 'undefined') {
-                localStorage.setItem('openai_api_key', OPENAI_API_KEY);
-            }
+        // Check for API key
+        const currentApiKey = apiKeyInput.value.trim() || OPENAI_API_KEY;
+        if (!currentApiKey) {
+            showNotification('Please enter your OpenAI API key.', 'error');
+            return;
+        }
+
+        // Update API key if changed
+        if (currentApiKey !== OPENAI_API_KEY) {
+            setApiKey(currentApiKey);
         }
 
         // Show loading state
         loadingDiv.classList.remove('hidden');
         analyzeBtn.disabled = true;
-        
-        // Reset enhanced resume section
-        if (enhancedResumeTextarea) {
-            enhancedResumeTextarea.value = '';
-        }
-        if (downloadBtn) {
-            downloadBtn.disabled = true;
-        }
 
         try {
             // Call OpenAI API
             try {
-                const prompt = `Analyze the following resume against the job description and provide a comprehensive assessment to help achieve a 90% ATS score.
+                const prompt = `You are a senior ATS resume optimization expert with 20+ years in HR technology and recruitment. You provide analysis superior to Teal, Jobscan, Resume Worded, and TopResume. Focus on achieving 95%+ ATS scores through comprehensive keyword analysis, structural optimization, content enhancement, and competitive positioning. Provide specific, actionable advice with exact phrases, formatting recommendations, and industry insights. Include line-by-line improvements only when necessary and impactful. Response must be valid JSON with keys: "score" (0-100), "requiredSkills" (array), "missingSkills" (array), "analysis" (detailed string), "suggestions" (comprehensive string). Only output JSON.
 
 RESUME:
 ${resume}
 
 JOB DESCRIPTION:
-${jobDesc}
+${jobDesc}"`;
 
-Please provide a detailed analysis in the following JSON format:
-
-{
-  "score": [current_score_0-100],
-  "requiredSkills": [array_of_skills_from_job_description],
-  "missingSkills": [array_of_skills_in_job_but_not_in_resume],
-  "analysis": "Detailed analysis of current resume strengths and weaknesses",
-  "suggestions": "Provide specific, actionable suggestions including:
-
-1. EXACT LINES TO ADD: Provide 3-5 specific bullet points or sentences that should be added to the resume. Use this format:
-   • [Exact bullet point to add to experience section]
-   • [Exact sentence to add to skills section]
-   • [Exact line to add to summary/objective]
-
-2. KEYWORDS TO INCLUDE: List specific keywords from the job description that should be incorporated into the resume
-
-3. FORMAT IMPROVEMENTS: Suggest specific formatting changes for better ATS parsing
-
-4. SKILL ENHANCEMENTS: How to better highlight existing skills that match the job requirements
-
-5. ATS OPTIMIZATION: Specific tips to improve ATS parsing and scoring
-
-Focus on providing concrete, implementable suggestions that will directly improve the ATS score to 90% or higher. Be specific about where and how to add content to the resume. Include exact phrases and keywords from the job description."`;
-
-                // Call OpenAI API with the global OPENAI_API_KEY
-                const response = await callOpenAI(OPENAI_API_KEY, prompt);
+                // Call OpenAI API with the current API key
+                const response = await callOpenAI(currentApiKey, prompt);
                 
                 // Debug: Log the raw response
                 console.log('Raw API response:', response);
@@ -241,43 +375,36 @@ Focus on providing concrete, implementable suggestions that will directly improv
                     // Clean the response to ensure it's valid JSON
                     let jsonString = response.trim();
                     
-                    // If the response starts with ```json and ends with ```, remove them
-                    if (jsonString.startsWith('```json') && jsonString.endsWith('```')) {
-                        jsonString = jsonString.substring(7, jsonString.length - 3).trim();
+                    // Remove any markdown code blocks if present
+                    if (jsonString.startsWith('```json')) {
+                        jsonString = jsonString.replace(/```json\n?/, '').replace(/\n?```/, '');
+                    } else if (jsonString.startsWith('```')) {
+                        jsonString = jsonString.replace(/```\n?/, '').replace(/\n?```/, '');
                     }
                     
-                    // Parse the JSON
                     result = JSON.parse(jsonString);
-                    console.log('Parsed result:', result);
-                    
-                    // Validate the response has the required fields
-                    if (typeof result.score === 'undefined' || 
-                        typeof result.analysis === 'undefined' || 
-                        typeof result.suggestions === 'undefined') {
-                        throw new Error('Missing required fields in response');
-                    }
-                    
-                    // Ensure score is a number
-                    result.score = parseFloat(result.score);
-                    if (isNaN(result.score)) {
-                        throw new Error('Score must be a number');
-                    }
-                } catch (e) {
-                    console.error('Error parsing AI response:', e);
-                    console.log('Raw response:', response);
-                    throw new Error('Could not parse the analysis. The AI response was not in the expected format. Please try again.');
+                } catch (parseError) {
+                    console.error('JSON parse error:', parseError);
+                    console.log('Attempted to parse:', response);
+                    throw new Error('Invalid response format from API');
                 }
-
-                // Update the UI with results
+                
+                // Validate the result structure
+                if (!result.score || !result.requiredSkills || !result.missingSkills || !result.analysis || !result.suggestions) {
+                    throw new Error('Incomplete response from API');
+                }
+                
+                // Display results
                 displayResults(result);
-
-            } catch (error) {
-                console.error('Analysis Error:', error);
-                throw error; // Re-throw to be caught by outer catch
+                
+            } catch (apiError) {
+                console.error('API Error:', apiError);
+                throw new Error(`API Error: ${apiError.message}`);
             }
+            
         } catch (error) {
-            console.error('Error:', error);
-            alert('An error occurred: ' + error.message);
+            console.error('Analysis error:', error);
+            showNotification(`Analysis failed: ${error.message}`, 'error');
         } finally {
             // Hide loading state
             loadingDiv.classList.add('hidden');
@@ -287,463 +414,193 @@ Focus on providing concrete, implementable suggestions that will directly improv
 
     // Call OpenAI API
     async function callOpenAI(apiKey, prompt) {
-        console.log('Making API call to OpenAI...');
-        const finalApiKey = apiKey || OPENAI_API_KEY;
-        console.log('API Key starts with:', finalApiKey ? finalApiKey.substring(0, 8) + '...' : 'No API key');
-        
-        if (!finalApiKey) {
-            throw new Error('No API key provided');
-        }
-        
-        try {
-            const requestBody = {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
                 model: MODEL_NAME,
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an expert ATS (Applicant Tracking System) resume analyzer. Your goal is to help candidates achieve a 90% or higher ATS score. Provide specific, actionable suggestions including exact lines to add to the resume, keywords to include, and formatting improvements. Focus on concrete, implementable advice that will directly improve the ATS score. Your response MUST be a valid JSON object with these exact keys: "score" (number 0-100), "requiredSkills" (array of strings), "missingSkills" (array of strings), "analysis" (string), and "suggestions" (string). Only output the JSON object, no other text.'
+                        content: 'You are an expert ATS resume analyzer. Provide only valid JSON responses.'
                     },
                     {
                         role: 'user',
                         content: prompt
                     }
                 ],
-                temperature: 0.2,  // Slightly lower temperature for more consistent results
-                max_tokens: 4000,  // Increased token limit for more detailed analysis
-                response_format: { type: "json_object" }  // Ensure JSON response format
-            };
-            
-            console.log('Request body:', JSON.stringify(requestBody, null, 2));
-            
-            const response = await fetch('https://api.openai.com/v1/chat/completions', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${finalApiKey}`,
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-            
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                let errorMessage = `HTTP error! status: ${response.status}`;
-                try {
-                    const errorData = await response.json();
-                    console.error('API Error Details:', errorData);
-                    errorMessage = errorData.error?.message || errorMessage;
-                } catch (e) {
-                    console.error('Error parsing error response:', e);
-                }
-                throw new Error(`API Error: ${errorMessage}`);
-            }
+                temperature: 0.3,
+                max_tokens: 4000
+            })
+        });
 
-            const data = await response.json();
-            console.log('API Response:', data);
-            
-            if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-                throw new Error('Invalid response format from API');
-            }
-
-            return data.choices[0].message.content;
-            
-        } catch (error) {
-            console.error('API Call Error Details:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack,
-                type: typeof error
-            });
-            throw new Error(`Failed to connect to the analysis service: ${error.message}. Please check your internet connection and try again.`);
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorData.error?.message || ''}`);
         }
+
+        const data = await response.json();
+        return data.choices[0].message.content;
     }
 
-    // Display results in the UI
+    // Display results
     function displayResults(result) {
-        try {
-            console.log('Displaying results:', result);
-            
-            // Ensure score is a number between 0 and 100
-            const score = Math.min(100, Math.max(0, parseFloat(result.score) || 0));
-            
-            // Update the page title with the score
-            document.title = `Resume Matcher - ${score}% Match`;
-            
-            // Make sure the result div is visible first
-            resultDiv.classList.remove('hidden');
-            
-            // Force a reflow to ensure the element is visible before animating
-            void resultDiv.offsetHeight;
-            
-            // Scroll to top to show the score
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            // Update score with animation
-            animateValue(scoreElement, 0, score, 1500);
-            
-            // Update required skills
-            const requiredSkillsContainer = document.getElementById('requiredSkills');
-            if (requiredSkillsContainer && Array.isArray(result.requiredSkills)) {
-                requiredSkillsContainer.innerHTML = result.requiredSkills
-                    .map(skill => `<span class="skill-tag">${skill}</span>`)
-                    .join('') || '<p>No skills detected in job description.</p>';
-            }
-            
-            // Update missing skills
-            const missingSkillsContainer = document.getElementById('missingSkills');
-            if (missingSkillsContainer && Array.isArray(result.missingSkills)) {
-                missingSkillsContainer.innerHTML = result.missingSkills
-                    .map(skill => `<span class="skill-tag missing">${skill}</span>`)
-                    .join('') || '<p>No missing skills found. Great job!</p>';
-            }
-            
-            // Update analysis and suggestions if they exist in the DOM
-            if (analysisText) {
-                analysisText.innerHTML = formatTextWithBullets(String(result.analysis || 'No analysis provided.'));
-            }
-            
-            if (suggestionsText) {
-                suggestionsText.innerHTML = formatTextWithBullets(String(result.suggestions || 'No suggestions provided.'));
-            }
-            
-            // Update actionable steps
-            const actionableStepsContainer = document.getElementById('actionableSteps');
-            if (actionableStepsContainer) {
-                actionableStepsContainer.innerHTML = formatActionableSteps(String(result.suggestions || ''));
-            }
-            
-            // Generate and display enhanced resume
-            generateEnhancedResume(resumeText.value, jobDescription.value, result);
-            
-            // Add a class to the body to indicate results are shown
-            document.body.classList.add('results-shown');
-            
-        } catch (error) {
-            console.error('Error displaying results:', error);
-            // Show error to user in the result div
-            resultDiv.innerHTML = `
-                <div class="error-message">
-                    <h3>Error</h3>
-                    <p>${error.message || 'An error occurred while processing your request.'}</p>
-                </div>
-            `;
-            resultDiv.classList.remove('hidden');
+        // Navigate to results section
+        navigateToSection('results');
+        
+        // Animate score
+        const targetScore = result.score;
+        animateValue(scoreElement, 0, targetScore, 2000);
+        
+        // Update score ring
+        const circumference = 2 * Math.PI * 54; // r=54
+        const offset = circumference - (targetScore / 100) * circumference;
+        scoreRing.style.strokeDashoffset = offset;
+        
+        // Update score labels
+        if (targetScore >= 90) {
+            scoreLabel.textContent = 'Excellent';
+            scoreLabel.style.color = 'var(--success-600)';
+            scoreDescription.textContent = 'Your resume is highly optimized for ATS systems';
+        } else if (targetScore >= 70) {
+            scoreLabel.textContent = 'Good';
+            scoreLabel.style.color = 'var(--primary-600)';
+            scoreDescription.textContent = 'Good score with room for improvement';
+        } else if (targetScore >= 50) {
+            scoreLabel.textContent = 'Fair';
+            scoreLabel.style.color = 'var(--warning-600)';
+            scoreDescription.textContent = 'Fair score, significant improvements needed';
+        } else {
+            scoreLabel.textContent = 'Poor';
+            scoreLabel.style.color = 'var(--error-600)';
+            scoreDescription.textContent = 'Poor ATS compatibility, major changes required';
+        }
+        
+        // Display skills
+        displaySkills('requiredSkills', result.requiredSkills, false);
+        displaySkills('missingSkills', result.missingSkills, true);
+        
+        // Display analysis and suggestions
+        analysisText.innerHTML = formatTextWithBullets(result.analysis);
+        suggestionsText.innerHTML = formatTextWithBullets(result.suggestions);
+        
+        // Display actionable steps
+        const actionableSteps = document.getElementById('actionableSteps');
+        actionableSteps.innerHTML = formatActionableSteps(result.suggestions);
+    }
+
+    // Display skills
+    function displaySkills(elementId, skills, isMissing) {
+        const element = document.getElementById(elementId);
+        element.innerHTML = '';
+        
+        if (skills && skills.length > 0) {
+            skills.forEach(skill => {
+                const skillTag = document.createElement('span');
+                skillTag.className = `skill-tag ${isMissing ? 'missing' : ''}`;
+                skillTag.textContent = skill;
+                element.appendChild(skillTag);
+            });
+        } else {
+            const noSkills = document.createElement('span');
+            noSkills.className = 'skill-tag';
+            noSkills.textContent = isMissing ? 'No missing skills found' : 'No required skills identified';
+            noSkills.style.opacity = '0.6';
+            element.appendChild(noSkills);
         }
     }
 
-    // Helper function to animate the score counter
+    // Animate value
     function animateValue(element, start, end, duration) {
-        const range = end - start;
-        let current = start;
-        const increment = end > start ? 1 : -1;
-        const stepTime = Math.abs(Math.floor(duration / range));
-        const timer = setInterval(function() {
-            current += increment;
-            element.textContent = current;
-            if (current === end) {
-                clearInterval(timer);
+        const startTime = performance.now();
+        const difference = end - start;
+        
+        function updateValue(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Easing function for smooth animation
+            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+            const currentValue = Math.round(start + (difference * easeOutQuart));
+            
+            element.textContent = currentValue;
+            
+            if (progress < 1) {
+                requestAnimationFrame(updateValue);
             }
-        }, stepTime);
+        }
+        
+        requestAnimationFrame(updateValue);
     }
 
-    // Format text with bullet points
+    // Format text with bullets
     function formatTextWithBullets(text) {
         if (!text) return '';
         
-        // Replace numbered lists with bullet points for better readability
-        let formattedText = text
-            .replace(/^\d+[.)]\s*/gm, '• ')  // Replace numbered lists (1. 2. 3.)
-            .replace(/\n/g, '<br>')           // Replace newlines with <br> tags
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')  // Bold text
-            .replace(/_(.*?)_/g, '<em>$1</em>');  // Italic text
-        
-        // Add spacing between paragraphs
-        formattedText = formattedText.replace(/<br>\s*<br>/g, '</p><p>');
-        
-        return `<p>${formattedText}</p>`;
+        return text
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0)
+            .map(line => {
+                if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*')) {
+                    return `<li>${line.substring(1).trim()}</li>`;
+                } else if (line.match(/^\d+\./)) {
+                    return `<li>${line}</li>`;
+                } else {
+                    return `<p>${line}</p>`;
+                }
+            })
+            .join('')
+            .replace(/<li>/g, '<ul><li>')
+            .replace(/<\/li>/g, '</li></ul>')
+            .replace(/<\/ul><ul>/g, '');
     }
 
     // Format actionable steps
     function formatActionableSteps(text) {
-        if (!text) return '<p>No actionable steps provided.</p>';
+        if (!text) return '';
         
-        // Split text into sections and extract specific actionable items
+        const sections = [];
         const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
         
-        let actionableSteps = [];
+        let currentSection = null;
+        let currentItems = [];
         
         lines.forEach(line => {
-            // Look for numbered lists, bullet points, or specific action items
-            if (line.match(/^\d+[.)]\s*/) || // Numbered lists (1. 2. 3.)
-                line.match(/^[•\-\*]\s*/) || // Bullet points
-                line.match(/^EXACT LINES TO ADD:/i) ||
-                line.match(/^KEYWORDS TO INCLUDE:/i) ||
-                line.match(/^FORMAT IMPROVEMENTS:/i) ||
-                line.match(/^SKILL ENHANCEMENTS:/i) ||
-                line.match(/^ATS OPTIMIZATION:/i) ||
-                line.includes('Add') ||
-                line.includes('Include') ||
-                line.includes('Update') ||
-                line.includes('Modify') ||
-                line.includes('Change') ||
-                line.includes('Improve')) {
-                
-                // Clean up the line
-                let cleanLine = line
-                    .replace(/^\d+[.)]\s*/, '') // Remove numbering
-                    .replace(/^[•\-\*]\s*/, '') // Remove bullet points
-                    .replace(/^(EXACT LINES TO ADD|KEYWORDS TO INCLUDE|FORMAT IMPROVEMENTS|SKILL ENHANCEMENTS|ATS OPTIMIZATION):\s*/i, '') // Remove section headers
-                    .trim();
-                
-                if (cleanLine.length > 10) { // Only include substantial suggestions
-                    actionableSteps.push(cleanLine);
-                }
-            }
-        });
-        
-        // If no specific actionable items found, create general steps from the text
-        if (actionableSteps.length === 0) {
-            // Split by sentences and create steps
-            const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
-            actionableSteps = sentences.slice(0, 5); // Take first 5 substantial sentences
-        }
-        
-        if (actionableSteps.length === 0) {
-            return '<p>Review the suggestions above for specific improvements.</p>';
-        }
-        
-        // Format as a list
-        const formattedSteps = actionableSteps
-            .map(step => `<li>${step}</li>`)
-            .join('');
-        
-        return `<ul>${formattedSteps}</ul>`;
-    }
-
-    // Generate and display enhanced resume
-    function generateEnhancedResume(originalResume, jobDesc, result) {
-        try {
-            // Extract actionable suggestions
-            const suggestions = String(result.suggestions || '');
-            const missingSkills = Array.isArray(result.missingSkills) ? result.missingSkills : [];
-            
-            // Parse suggestions to extract specific additions
-            const additions = parseSuggestionsForAdditions(suggestions);
-            
-            // Create enhanced resume
-            let enhancedResume = originalResume;
-            
-            // Add missing skills to skills section
-            if (missingSkills.length > 0) {
-                enhancedResume = addSkillsToResume(enhancedResume, missingSkills);
-            }
-            
-            // Add specific content from suggestions
-            if (additions.length > 0) {
-                enhancedResume = addContentToResume(enhancedResume, additions);
-            }
-            
-            // Add keywords from job description
-            enhancedResume = addKeywordsFromJobDesc(enhancedResume, jobDesc);
-            
-            // Display enhanced resume
-            if (enhancedResumeTextarea) {
-                enhancedResumeTextarea.value = enhancedResume;
-                enhancedResumeTextarea.style.height = 'auto';
-                enhancedResumeTextarea.style.height = (enhancedResumeTextarea.scrollHeight) + 'px';
-            }
-            
-            // Enable download button
-            if (downloadBtn) {
-                downloadBtn.disabled = false;
-            }
-            
-        } catch (error) {
-            console.error('Error generating enhanced resume:', error);
-            if (enhancedResumeTextarea) {
-                enhancedResumeTextarea.value = 'Error generating enhanced resume. Please try again.';
-            }
-        }
-    }
-    
-    // Parse suggestions to extract specific additions
-    function parseSuggestionsForAdditions(suggestions) {
-        const additions = [];
-        const lines = suggestions.split('\n');
-        
-        lines.forEach(line => {
-            const trimmedLine = line.trim();
-            // Look for bullet points or specific additions
-            if (trimmedLine.match(/^[•\-\*]\s*/) || 
-                trimmedLine.includes('Add') || 
-                trimmedLine.includes('Include') ||
-                trimmedLine.match(/^EXACT LINES TO ADD:/i)) {
-                
-                let cleanLine = trimmedLine
-                    .replace(/^[•\-\*]\s*/, '')
-                    .replace(/^EXACT LINES TO ADD:\s*/i, '')
-                    .trim();
-                
-                if (cleanLine.length > 10 && !cleanLine.includes(':')) {
-                    additions.push(cleanLine);
-                }
-            }
-        });
-        
-        return additions;
-    }
-    
-    // Add missing skills to resume
-    function addSkillsToResume(resume, missingSkills) {
-        // Look for skills section
-        const skillsPatterns = [
-            /skills?:/i,
-            /technical skills?:/i,
-            /competencies?:/i,
-            /expertise?:/i
-        ];
-        
-        let skillsAdded = false;
-        let enhancedResume = resume;
-        
-        skillsPatterns.forEach(pattern => {
-            if (pattern.test(resume) && !skillsAdded) {
-                // Add missing skills to existing skills section
-                const skillsText = missingSkills.join(', ');
-                enhancedResume = enhancedResume.replace(pattern, (match) => {
-                    return match + ' ' + skillsText + ', ';
-                });
-                skillsAdded = true;
-            }
-        });
-        
-        // If no skills section found, add one
-        if (!skillsAdded) {
-            const skillsSection = '\n\nSKILLS:\n' + missingSkills.join(', ');
-            enhancedResume += skillsSection;
-        }
-        
-        return enhancedResume;
-    }
-    
-    // Add specific content from suggestions
-    function addContentToResume(resume, additions) {
-        let enhancedResume = resume;
-        
-        // Add additions to experience section or create one
-        if (additions.length > 0) {
-            const experiencePatterns = [
-                /experience?:/i,
-                /work history?:/i,
-                /employment?:/i
-            ];
-            
-            let contentAdded = false;
-            
-            experiencePatterns.forEach(pattern => {
-                if (pattern.test(resume) && !contentAdded) {
-                    // Add to existing experience section
-                    const additionsText = '\n• ' + additions.join('\n• ');
-                    enhancedResume = enhancedResume.replace(pattern, (match) => {
-                        return match + '\n' + additionsText;
+            if (line.match(/^[A-Z][^:]*:$/) || line.match(/^[A-Z][^:]*\s*\(/)) {
+                // This is a section header
+                if (currentSection) {
+                    sections.push({
+                        title: currentSection,
+                        items: currentItems
                     });
-                    contentAdded = true;
                 }
+                currentSection = line.replace(/[:()]/g, '').trim();
+                currentItems = [];
+            } else if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*') || line.match(/^\d+\./)) {
+                // This is a list item
+                currentItems.push(line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, ''));
+            }
+        });
+        
+        // Add the last section
+        if (currentSection) {
+            sections.push({
+                title: currentSection,
+                items: currentItems
             });
-            
-            // If no experience section found, add one
-            if (!contentAdded) {
-                const experienceSection = '\n\nEXPERIENCE:\n• ' + additions.join('\n• ');
-                enhancedResume += experienceSection;
-            }
         }
         
-        return enhancedResume;
-    }
-    
-    // Add keywords from job description
-    function addKeywordsFromJobDesc(resume, jobDesc) {
-        // Extract important keywords from job description
-        const keywords = extractKeywords(jobDesc);
-        let enhancedResume = resume;
-        
-        // Add keywords to summary or create one
-        const summaryPatterns = [
-            /summary?:/i,
-            /objective?:/i,
-            /profile?:/i
-        ];
-        
-        let keywordsAdded = false;
-        
-        summaryPatterns.forEach(pattern => {
-            if (pattern.test(resume) && !keywordsAdded) {
-                // Add keywords to existing summary
-                const keywordsText = keywords.slice(0, 5).join(', ');
-                enhancedResume = enhancedResume.replace(pattern, (match) => {
-                    return match + ' Proficient in ' + keywordsText + '. ';
-                });
-                keywordsAdded = true;
-            }
-        });
-        
-        // If no summary found, add one
-        if (!keywordsAdded) {
-            const summarySection = '\n\nSUMMARY:\nExperienced professional with expertise in ' + keywords.slice(0, 5).join(', ') + '.';
-            enhancedResume = summarySection + '\n\n' + enhancedResume;
-        }
-        
-        return enhancedResume;
-    }
-    
-    // Extract keywords from job description
-    function extractKeywords(jobDesc) {
-        const commonKeywords = [
-            'management', 'leadership', 'development', 'analysis', 'design',
-            'implementation', 'coordination', 'planning', 'strategy', 'optimization',
-            'automation', 'integration', 'deployment', 'maintenance', 'support',
-            'collaboration', 'communication', 'problem-solving', 'innovation', 'efficiency'
-        ];
-        
-        const keywords = [];
-        const words = jobDesc.toLowerCase().match(/\b\w+\b/g) || [];
-        
-        commonKeywords.forEach(keyword => {
-            if (words.includes(keyword.toLowerCase()) && !keywords.includes(keyword)) {
-                keywords.push(keyword);
-            }
-        });
-        
-        return keywords;
-    }
-    
-    // Download enhanced resume
-    function downloadEnhancedResume() {
-        try {
-            const enhancedResume = enhancedResumeTextarea.value;
-            if (!enhancedResume || enhancedResume.trim() === '') {
-                alert('No enhanced resume available to download.');
-                return;
-            }
-            
-            // Create blob and download
-            const blob = new Blob([enhancedResume], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'enhanced_resume_ats_optimized.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            
-            // Show success message
-            alert('Enhanced resume downloaded successfully!');
-            
-        } catch (error) {
-            console.error('Error downloading resume:', error);
-            alert('Error downloading resume. Please try again.');
-        }
+        return sections.map(section => `
+            <div class="suggestion-section">
+                <h4>${section.title}</h4>
+                <ul>
+                    ${section.items.map(item => `<li>${item}</li>`).join('')}
+                </ul>
+            </div>
+        `).join('');
     }
 });

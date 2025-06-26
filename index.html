@@ -3,98 +3,321 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resume Matcher</title>
+    <title>ATS Pro - Advanced Resume Optimizer</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Resume Matcher</h1>
-            <p>Upload your resume and job description to get a compatibility score</p>
-        </header>
-
-        <!-- Score Box -->
-        <div id="result" class="result hidden">
-            <div class="score-container">
-                <div class="score">
-                    <span id="score">0</span>%
-                </div>
-                <p>Match Score</p>
-            </div>
-            <div class="skills-container">
-                <div class="skills-box">
-                    <h3>Required Skills</h3>
-                    <div id="requiredSkills" class="skills-list"></div>
-                </div>
-                <div class="skills-box missing">
-                    <h3>Missing Skills</h3>
-                    <div id="missingSkills" class="skills-list"></div>
-                </div>
-            </div>
-            <div class="analysis">
-                <h3>Analysis</h3>
-                <div id="analysisText" class="analysis-text"></div>
-            </div>
-            <div class="suggestions">
-                <h3>Suggestions for Improvement</h3>
-                <div id="suggestionsText" class="suggestions-text"></div>
-            </div>
-            <div class="actionable-suggestions">
-                <h3>🚀 Actionable Steps to Reach 90% Score</h3>
-                <div id="actionableSteps" class="actionable-steps"></div>
-            </div>
-            <div class="enhanced-resume">
-                <h3>📄 Enhanced Resume (90% ATS Optimized)</h3>
-                <div class="resume-preview">
-                    <textarea id="enhancedResume" readonly placeholder="Your enhanced resume will appear here after analysis..."></textarea>
-                </div>
-                <div class="download-section">
-                    <button id="downloadBtn" class="download-btn" disabled>
-                        <span>⬇️ Download Enhanced Resume</span>
-                    </button>
-                    <div class="download-info">
-                        <p>Your resume has been automatically enhanced with the suggested improvements for better ATS compatibility.</p>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <div class="logo-text">
+                        <h1>ATS Pro</h1>
+                        <span>Resume Optimizer</span>
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="upload-section">
-            <div class="upload-box">
-                <h3>Resume</h3>
-                <textarea id="resumeText" placeholder="Paste your resume content here..."></textarea>
-                <div class="file-upload-container">
-                    <label for="resumeFile" class="file-upload-label">
-                        <span>Choose Resume File</span>
-                        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
-                    </label>
-                    <div id="resumeFileName" class="file-name">No file selected</div>
+            
+            <nav class="sidebar-nav">
+                <div class="nav-section">
+                    <h3>Analysis</h3>
+                    <ul>
+                        <li class="nav-item active" data-section="upload">
+                            <i class="fas fa-upload"></i>
+                            <span>Upload Content</span>
+                        </li>
+                        <li class="nav-item" data-section="results">
+                            <i class="fas fa-chart-bar"></i>
+                            <span>Results</span>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="nav-section">
+                    <h3>Settings</h3>
+                    <ul>
+                        <li class="nav-item" data-section="api">
+                            <i class="fas fa-key"></i>
+                            <span>API Key</span>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <div class="status-dot"></div>
+                    <span>Ready to analyze</span>
                 </div>
             </div>
+        </aside>
 
-            <div class="upload-box">
-                <h3>Job Description</h3>
-                <textarea id="jobDescription" placeholder="Paste the job description here..."></textarea>
-                <div class="file-upload-container">
-                    <label for="jobDescriptionFile" class="file-upload-label">
-                        <span>Choose Job Description File</span>
-                        <input type="file" id="jobDescriptionFile" accept=".pdf,.doc,.docx,.txt">
-                    </label>
-                    <div id="jobDescriptionFileName" class="file-name">No file selected</div>
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="main-header">
+                <div class="header-left">
+                    <button class="menu-toggle" id="menuToggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 id="pageTitle">Upload Content</h2>
                 </div>
-            </div>
-        </div>
+                <div class="header-right">
+                    <div class="header-actions">
+                        <button class="action-btn" id="helpBtn" title="Help">
+                            <i class="fas fa-question-circle"></i>
+                        </button>
+                        <button class="action-btn" id="settingsBtn" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                    </div>
+                </div>
+            </header>
 
-        <div class="controls">
-            <button id="analyzeBtn">Analyze Match</button>
-            <!-- API key is now hardcoded in script.js -->
-        </div>
+            <!-- Content Sections -->
+            <div class="content-wrapper">
+                <!-- Upload Section -->
+                <section id="uploadSection" class="content-section active">
+                    <div class="section-header">
+                        <h3>Resume & Job Description</h3>
+                        <p>Upload or paste your resume and job description to get started</p>
+                    </div>
+                    
+                    <div class="upload-grid">
+                        <div class="upload-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-file-alt"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Resume</h4>
+                                    <span class="char-count" id="resumeCharCount">0 characters</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-content">
+                                <div class="textarea-wrapper">
+                                    <textarea id="resumeText" placeholder="Paste your resume content here or upload a file..."></textarea>
+                                    <div class="scroll-controls">
+                                        <button class="scroll-btn scroll-up" title="Scroll to top">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <button class="scroll-btn scroll-down" title="Scroll to bottom">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="file-upload">
+                                    <label for="resumeFile" class="upload-btn">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose File</span>
+                                        <input type="file" id="resumeFile" accept=".pdf,.doc,.docx,.txt">
+                                    </label>
+                                    <div class="file-info" id="resumeFileName">No file selected</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="upload-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <div class="card-title">
+                                    <h4>Job Description</h4>
+                                    <span class="char-count" id="jobCharCount">0 characters</span>
+                                </div>
+                            </div>
+                            
+                            <div class="card-content">
+                                <div class="textarea-wrapper">
+                                    <textarea id="jobDescription" placeholder="Paste the job description here or upload a file..."></textarea>
+                                    <div class="scroll-controls">
+                                        <button class="scroll-btn scroll-up" title="Scroll to top">
+                                            <i class="fas fa-chevron-up"></i>
+                                        </button>
+                                        <button class="scroll-btn scroll-down" title="Scroll to bottom">
+                                            <i class="fas fa-chevron-down"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="file-upload">
+                                    <label for="jobDescriptionFile" class="upload-btn">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <span>Choose File</span>
+                                        <input type="file" id="jobDescriptionFile" accept=".pdf,.doc,.docx,.txt">
+                                    </label>
+                                    <div class="file-info" id="jobDescriptionFileName">No file selected</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-bar">
+                        <button id="analyzeBtn" class="primary-btn">
+                            <i class="fas fa-magic"></i>
+                            <span>Analyze with GPT-4</span>
+                        </button>
+                    </div>
+                </section>
+
+                <!-- Results Section -->
+                <section id="resultsSection" class="content-section">
+                    <div class="section-header">
+                        <h3>Analysis Results</h3>
+                        <p>Your ATS compatibility score and detailed recommendations</p>
+                    </div>
+                    
+                    <div class="results-container">
+                        <!-- Score Card -->
+                        <div class="score-card">
+                            <div class="score-header">
+                                <div class="score-icon">
+                                    <i class="fas fa-trophy"></i>
+                                </div>
+                                <div class="score-info">
+                                    <h4>ATS Compatibility Score</h4>
+                                    <p>How well your resume matches the job requirements</p>
+                                </div>
+                            </div>
+                            
+                            <div class="score-display">
+                                <div class="score-circle">
+                                    <svg class="score-ring" viewBox="0 0 120 120">
+                                        <circle class="score-ring-bg" cx="60" cy="60" r="54"></circle>
+                                        <circle class="score-ring-fill" cx="60" cy="60" r="54" id="scoreRing"></circle>
+                                    </svg>
+                                    <div class="score-value">
+                                        <span id="score">0</span>
+                                        <small>%</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="score-details">
+                                    <div class="score-label" id="scoreLabel">Excellent</div>
+                                    <div class="score-description" id="scoreDescription">Your resume is highly optimized for ATS systems</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Skills Analysis -->
+                        <div class="analysis-grid">
+                            <div class="analysis-card skills-card">
+                                <div class="card-header">
+                                    <i class="fas fa-tools"></i>
+                                    <h4>Required Skills</h4>
+                                </div>
+                                <div class="card-content">
+                                    <div id="requiredSkills" class="skills-list"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="analysis-card skills-card missing">
+                                <div class="card-header">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <h4>Missing Skills</h4>
+                                </div>
+                                <div class="card-content">
+                                    <div id="missingSkills" class="skills-list"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Detailed Analysis -->
+                        <div class="analysis-card">
+                            <div class="card-header">
+                                <i class="fas fa-chart-bar"></i>
+                                <h4>Professional Analysis</h4>
+                            </div>
+                            <div class="card-content">
+                                <div id="analysisText" class="analysis-text"></div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="analysis-card">
+                            <div class="card-header">
+                                <i class="fas fa-lightbulb"></i>
+                                <h4>Expert Recommendations</h4>
+                            </div>
+                            <div class="card-content">
+                                <div id="suggestionsText" class="suggestions-text"></div>
+                            </div>
+                        </div>
+
+                        <!-- Action Plan -->
+                        <div class="analysis-card action-plan">
+                            <div class="card-header">
+                                <i class="fas fa-rocket"></i>
+                                <h4>Action Plan to Reach 95%</h4>
+                            </div>
+                            <div class="card-content">
+                                <div id="actionableSteps" class="actionable-steps"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- API Settings Section -->
+                <section id="apiSection" class="content-section">
+                    <div class="section-header">
+                        <h3>API Configuration</h3>
+                        <p>Configure your OpenAI API key for analysis</p>
+                    </div>
+                    
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div class="setting-info">
+                                <h4>OpenAI API Key</h4>
+                                <p>Your API key is stored locally and never shared</p>
+                            </div>
+                            <div class="setting-control">
+                                <input type="password" id="apiKey" placeholder="Enter your OpenAI API key" class="api-input">
+                                <button id="saveApiKey" class="secondary-btn">
+                                    <i class="fas fa-save"></i>
+                                    <span>Save</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
     </div>
 
-    <div id="loading" class="loading hidden">
-        <div class="spinner"></div>
-        <p>Analyzing your resume...</p>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay hidden">
+        <div class="loading-content">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <h3>Analyzing Your Resume</h3>
+            <p>This may take a few moments...</p>
+            <div class="loading-steps">
+                <div class="step active">
+                    <i class="fas fa-search"></i>
+                    <span>Analyzing keywords</span>
+                </div>
+                <div class="step">
+                    <i class="fas fa-cogs"></i>
+                    <span>Optimizing structure</span>
+                </div>
+                <div class="step">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Generating recommendations</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Add mammoth.js for DOCX support -->
