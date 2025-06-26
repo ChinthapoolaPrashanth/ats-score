@@ -45,6 +45,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const suggestionsText = document.getElementById('suggestionsText');
     const resumeFileInput = document.getElementById('resumeFile');
     const jobDescriptionFileInput = document.getElementById('jobDescriptionFile');
+    const enhancedResumeTextarea = document.getElementById('enhancedResume');
+    const downloadBtn = document.getElementById('downloadBtn');
 
     // DOM Elements for file names
     const resumeFileName = document.getElementById('resumeFileName');
@@ -52,6 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event Listeners
     analyzeBtn.addEventListener('click', analyzeResume);
+    downloadBtn.addEventListener('click', downloadEnhancedResume);
     resumeFileInput.addEventListener('change', (e) => handleFileUpload(e, resumeFileInput, resumeText, resumeFileName));
     jobDescriptionFileInput.addEventListener('change', (e) => handleFileUpload(e, jobDescriptionFileInput, jobDescription, jobDescriptionFileName));
 
@@ -182,38 +185,49 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading state
         loadingDiv.classList.remove('hidden');
         analyzeBtn.disabled = true;
+        
+        // Reset enhanced resume section
+        if (enhancedResumeTextarea) {
+            enhancedResumeTextarea.value = '';
+        }
+        if (downloadBtn) {
+            downloadBtn.disabled = true;
+        }
 
         try {
             // Call OpenAI API
             try {
-                const prompt = `Compare the following resume with the job description and provide:
-1. A match score (0-100)
-2. A list of required skills from the job description
-3. A list of missing skills that are in the job description but not in the resume
-4. A detailed analysis of how well the resume matches the job requirements
-5. Specific suggestions for improving the resume to better match the job description
-
-IMPORTANT: Your response MUST be valid JSON with these exact keys: 
-- "score" (number between 0-100)
-- "requiredSkills" (array of strings)
-- "missingSkills" (array of strings)
-- "analysis" (string)
-- "suggestions" (string)
-
-Example response format:
-{
-  "score": 85,
-  "requiredSkills": ["JavaScript", "React", "Node.js", "HTML/CSS"],
-  "missingSkills": ["TypeScript", "Redux"],
-  "analysis": "The resume shows good alignment with the job requirements...",
-  "suggestions": "1. Add more details about your experience with..."
-}
+                const prompt = `Analyze the following resume against the job description and provide a comprehensive assessment to help achieve a 90% ATS score.
 
 RESUME:
 ${resume}
 
 JOB DESCRIPTION:
-${jobDesc}`;
+${jobDesc}
+
+Please provide a detailed analysis in the following JSON format:
+
+{
+  "score": [current_score_0-100],
+  "requiredSkills": [array_of_skills_from_job_description],
+  "missingSkills": [array_of_skills_in_job_but_not_in_resume],
+  "analysis": "Detailed analysis of current resume strengths and weaknesses",
+  "suggestions": "Provide specific, actionable suggestions including:
+
+1. EXACT LINES TO ADD: Provide 3-5 specific bullet points or sentences that should be added to the resume. Use this format:
+   • [Exact bullet point to add to experience section]
+   • [Exact sentence to add to skills section]
+   • [Exact line to add to summary/objective]
+
+2. KEYWORDS TO INCLUDE: List specific keywords from the job description that should be incorporated into the resume
+
+3. FORMAT IMPROVEMENTS: Suggest specific formatting changes for better ATS parsing
+
+4. SKILL ENHANCEMENTS: How to better highlight existing skills that match the job requirements
+
+5. ATS OPTIMIZATION: Specific tips to improve ATS parsing and scoring
+
+Focus on providing concrete, implementable suggestions that will directly improve the ATS score to 90% or higher. Be specific about where and how to add content to the resume. Include exact phrases and keywords from the job description."`;
 
                 // Call OpenAI API with the global OPENAI_API_KEY
                 const response = await callOpenAI(OPENAI_API_KEY, prompt);
@@ -287,7 +301,7 @@ ${jobDesc}`;
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are a helpful assistant that analyzes resumes against job descriptions. Provide detailed, constructive feedback. Your response MUST be a valid JSON object with these exact keys: "score" (number 0-100), "requiredSkills" (array of strings), "missingSkills" (array of strings), "analysis" (string), and "suggestions" (string). Only output the JSON object, no other text.'
+                        content: 'You are an expert ATS (Applicant Tracking System) resume analyzer. Your goal is to help candidates achieve a 90% or higher ATS score. Provide specific, actionable suggestions including exact lines to add to the resume, keywords to include, and formatting improvements. Focus on concrete, implementable advice that will directly improve the ATS score. Your response MUST be a valid JSON object with these exact keys: "score" (number 0-100), "requiredSkills" (array of strings), "missingSkills" (array of strings), "analysis" (string), and "suggestions" (string). Only output the JSON object, no other text.'
                     },
                     {
                         role: 'user',
@@ -393,6 +407,15 @@ ${jobDesc}`;
                 suggestionsText.innerHTML = formatTextWithBullets(String(result.suggestions || 'No suggestions provided.'));
             }
             
+            // Update actionable steps
+            const actionableStepsContainer = document.getElementById('actionableSteps');
+            if (actionableStepsContainer) {
+                actionableStepsContainer.innerHTML = formatActionableSteps(String(result.suggestions || ''));
+            }
+            
+            // Generate and display enhanced resume
+            generateEnhancedResume(resumeText.value, jobDescription.value, result);
+            
             // Add a class to the body to indicate results are shown
             document.body.classList.add('results-shown');
             
@@ -439,5 +462,288 @@ ${jobDesc}`;
         formattedText = formattedText.replace(/<br>\s*<br>/g, '</p><p>');
         
         return `<p>${formattedText}</p>`;
+    }
+
+    // Format actionable steps
+    function formatActionableSteps(text) {
+        if (!text) return '<p>No actionable steps provided.</p>';
+        
+        // Split text into sections and extract specific actionable items
+        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        
+        let actionableSteps = [];
+        
+        lines.forEach(line => {
+            // Look for numbered lists, bullet points, or specific action items
+            if (line.match(/^\d+[.)]\s*/) || // Numbered lists (1. 2. 3.)
+                line.match(/^[•\-\*]\s*/) || // Bullet points
+                line.match(/^EXACT LINES TO ADD:/i) ||
+                line.match(/^KEYWORDS TO INCLUDE:/i) ||
+                line.match(/^FORMAT IMPROVEMENTS:/i) ||
+                line.match(/^SKILL ENHANCEMENTS:/i) ||
+                line.match(/^ATS OPTIMIZATION:/i) ||
+                line.includes('Add') ||
+                line.includes('Include') ||
+                line.includes('Update') ||
+                line.includes('Modify') ||
+                line.includes('Change') ||
+                line.includes('Improve')) {
+                
+                // Clean up the line
+                let cleanLine = line
+                    .replace(/^\d+[.)]\s*/, '') // Remove numbering
+                    .replace(/^[•\-\*]\s*/, '') // Remove bullet points
+                    .replace(/^(EXACT LINES TO ADD|KEYWORDS TO INCLUDE|FORMAT IMPROVEMENTS|SKILL ENHANCEMENTS|ATS OPTIMIZATION):\s*/i, '') // Remove section headers
+                    .trim();
+                
+                if (cleanLine.length > 10) { // Only include substantial suggestions
+                    actionableSteps.push(cleanLine);
+                }
+            }
+        });
+        
+        // If no specific actionable items found, create general steps from the text
+        if (actionableSteps.length === 0) {
+            // Split by sentences and create steps
+            const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+            actionableSteps = sentences.slice(0, 5); // Take first 5 substantial sentences
+        }
+        
+        if (actionableSteps.length === 0) {
+            return '<p>Review the suggestions above for specific improvements.</p>';
+        }
+        
+        // Format as a list
+        const formattedSteps = actionableSteps
+            .map(step => `<li>${step}</li>`)
+            .join('');
+        
+        return `<ul>${formattedSteps}</ul>`;
+    }
+
+    // Generate and display enhanced resume
+    function generateEnhancedResume(originalResume, jobDesc, result) {
+        try {
+            // Extract actionable suggestions
+            const suggestions = String(result.suggestions || '');
+            const missingSkills = Array.isArray(result.missingSkills) ? result.missingSkills : [];
+            
+            // Parse suggestions to extract specific additions
+            const additions = parseSuggestionsForAdditions(suggestions);
+            
+            // Create enhanced resume
+            let enhancedResume = originalResume;
+            
+            // Add missing skills to skills section
+            if (missingSkills.length > 0) {
+                enhancedResume = addSkillsToResume(enhancedResume, missingSkills);
+            }
+            
+            // Add specific content from suggestions
+            if (additions.length > 0) {
+                enhancedResume = addContentToResume(enhancedResume, additions);
+            }
+            
+            // Add keywords from job description
+            enhancedResume = addKeywordsFromJobDesc(enhancedResume, jobDesc);
+            
+            // Display enhanced resume
+            if (enhancedResumeTextarea) {
+                enhancedResumeTextarea.value = enhancedResume;
+                enhancedResumeTextarea.style.height = 'auto';
+                enhancedResumeTextarea.style.height = (enhancedResumeTextarea.scrollHeight) + 'px';
+            }
+            
+            // Enable download button
+            if (downloadBtn) {
+                downloadBtn.disabled = false;
+            }
+            
+        } catch (error) {
+            console.error('Error generating enhanced resume:', error);
+            if (enhancedResumeTextarea) {
+                enhancedResumeTextarea.value = 'Error generating enhanced resume. Please try again.';
+            }
+        }
+    }
+    
+    // Parse suggestions to extract specific additions
+    function parseSuggestionsForAdditions(suggestions) {
+        const additions = [];
+        const lines = suggestions.split('\n');
+        
+        lines.forEach(line => {
+            const trimmedLine = line.trim();
+            // Look for bullet points or specific additions
+            if (trimmedLine.match(/^[•\-\*]\s*/) || 
+                trimmedLine.includes('Add') || 
+                trimmedLine.includes('Include') ||
+                trimmedLine.match(/^EXACT LINES TO ADD:/i)) {
+                
+                let cleanLine = trimmedLine
+                    .replace(/^[•\-\*]\s*/, '')
+                    .replace(/^EXACT LINES TO ADD:\s*/i, '')
+                    .trim();
+                
+                if (cleanLine.length > 10 && !cleanLine.includes(':')) {
+                    additions.push(cleanLine);
+                }
+            }
+        });
+        
+        return additions;
+    }
+    
+    // Add missing skills to resume
+    function addSkillsToResume(resume, missingSkills) {
+        // Look for skills section
+        const skillsPatterns = [
+            /skills?:/i,
+            /technical skills?:/i,
+            /competencies?:/i,
+            /expertise?:/i
+        ];
+        
+        let skillsAdded = false;
+        let enhancedResume = resume;
+        
+        skillsPatterns.forEach(pattern => {
+            if (pattern.test(resume) && !skillsAdded) {
+                // Add missing skills to existing skills section
+                const skillsText = missingSkills.join(', ');
+                enhancedResume = enhancedResume.replace(pattern, (match) => {
+                    return match + ' ' + skillsText + ', ';
+                });
+                skillsAdded = true;
+            }
+        });
+        
+        // If no skills section found, add one
+        if (!skillsAdded) {
+            const skillsSection = '\n\nSKILLS:\n' + missingSkills.join(', ');
+            enhancedResume += skillsSection;
+        }
+        
+        return enhancedResume;
+    }
+    
+    // Add specific content from suggestions
+    function addContentToResume(resume, additions) {
+        let enhancedResume = resume;
+        
+        // Add additions to experience section or create one
+        if (additions.length > 0) {
+            const experiencePatterns = [
+                /experience?:/i,
+                /work history?:/i,
+                /employment?:/i
+            ];
+            
+            let contentAdded = false;
+            
+            experiencePatterns.forEach(pattern => {
+                if (pattern.test(resume) && !contentAdded) {
+                    // Add to existing experience section
+                    const additionsText = '\n• ' + additions.join('\n• ');
+                    enhancedResume = enhancedResume.replace(pattern, (match) => {
+                        return match + '\n' + additionsText;
+                    });
+                    contentAdded = true;
+                }
+            });
+            
+            // If no experience section found, add one
+            if (!contentAdded) {
+                const experienceSection = '\n\nEXPERIENCE:\n• ' + additions.join('\n• ');
+                enhancedResume += experienceSection;
+            }
+        }
+        
+        return enhancedResume;
+    }
+    
+    // Add keywords from job description
+    function addKeywordsFromJobDesc(resume, jobDesc) {
+        // Extract important keywords from job description
+        const keywords = extractKeywords(jobDesc);
+        let enhancedResume = resume;
+        
+        // Add keywords to summary or create one
+        const summaryPatterns = [
+            /summary?:/i,
+            /objective?:/i,
+            /profile?:/i
+        ];
+        
+        let keywordsAdded = false;
+        
+        summaryPatterns.forEach(pattern => {
+            if (pattern.test(resume) && !keywordsAdded) {
+                // Add keywords to existing summary
+                const keywordsText = keywords.slice(0, 5).join(', ');
+                enhancedResume = enhancedResume.replace(pattern, (match) => {
+                    return match + ' Proficient in ' + keywordsText + '. ';
+                });
+                keywordsAdded = true;
+            }
+        });
+        
+        // If no summary found, add one
+        if (!keywordsAdded) {
+            const summarySection = '\n\nSUMMARY:\nExperienced professional with expertise in ' + keywords.slice(0, 5).join(', ') + '.';
+            enhancedResume = summarySection + '\n\n' + enhancedResume;
+        }
+        
+        return enhancedResume;
+    }
+    
+    // Extract keywords from job description
+    function extractKeywords(jobDesc) {
+        const commonKeywords = [
+            'management', 'leadership', 'development', 'analysis', 'design',
+            'implementation', 'coordination', 'planning', 'strategy', 'optimization',
+            'automation', 'integration', 'deployment', 'maintenance', 'support',
+            'collaboration', 'communication', 'problem-solving', 'innovation', 'efficiency'
+        ];
+        
+        const keywords = [];
+        const words = jobDesc.toLowerCase().match(/\b\w+\b/g) || [];
+        
+        commonKeywords.forEach(keyword => {
+            if (words.includes(keyword.toLowerCase()) && !keywords.includes(keyword)) {
+                keywords.push(keyword);
+            }
+        });
+        
+        return keywords;
+    }
+    
+    // Download enhanced resume
+    function downloadEnhancedResume() {
+        try {
+            const enhancedResume = enhancedResumeTextarea.value;
+            if (!enhancedResume || enhancedResume.trim() === '') {
+                alert('No enhanced resume available to download.');
+                return;
+            }
+            
+            // Create blob and download
+            const blob = new Blob([enhancedResume], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'enhanced_resume_ats_optimized.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // Show success message
+            alert('Enhanced resume downloaded successfully!');
+            
+        } catch (error) {
+            console.error('Error downloading resume:', error);
+            alert('Error downloading resume. Please try again.');
+        }
     }
 });
