@@ -2,6 +2,10 @@
 const MODEL_NAME = 'gpt-4';
 let OPENAI_API_KEY = '';
 
+// Storage management
+let storedResumes = [];
+let storedJobDescriptions = [];
+
 // Function to set API key
 function setApiKey(key) {
     OPENAI_API_KEY = key.trim();
@@ -18,14 +22,175 @@ if (typeof window !== 'undefined') {
     }
 }
 
+// Storage functions
+function loadStoredData() {
+    try {
+        const resumes = localStorage.getItem('stored_resumes');
+        const jobDescriptions = localStorage.getItem('stored_job_descriptions');
+        
+        storedResumes = resumes ? JSON.parse(resumes) : [];
+        storedJobDescriptions = jobDescriptions ? JSON.parse(jobDescriptions) : [];
+        
+        renderStoredResumes();
+        renderStoredJobDescriptions();
+    } catch (error) {
+        console.error('Error loading stored data:', error);
+        storedResumes = [];
+        storedJobDescriptions = [];
+    }
+}
+
+function saveStoredData() {
+    try {
+        localStorage.setItem('stored_resumes', JSON.stringify(storedResumes));
+        localStorage.setItem('stored_job_descriptions', JSON.stringify(storedJobDescriptions));
+    } catch (error) {
+        console.error('Error saving stored data:', error);
+    }
+}
+
+function addStoredResume(name, content) {
+    const newResume = {
+        id: Date.now().toString(),
+        name: name,
+        content: content,
+        date: new Date().toLocaleDateString(),
+        timestamp: Date.now()
+    };
+    
+    storedResumes.unshift(newResume);
+    
+    // Keep only last 10 resumes
+    if (storedResumes.length > 10) {
+        storedResumes = storedResumes.slice(0, 10);
+    }
+    
+    saveStoredData();
+    renderStoredResumes();
+}
+
+function addStoredJobDescription(name, content) {
+    const newJobDescription = {
+        id: Date.now().toString(),
+        name: name,
+        content: content,
+        date: new Date().toLocaleDateString(),
+        timestamp: Date.now()
+    };
+    
+    storedJobDescriptions.unshift(newJobDescription);
+    
+    // Keep only last 10 job descriptions
+    if (storedJobDescriptions.length > 10) {
+        storedJobDescriptions = storedJobDescriptions.slice(0, 10);
+    }
+    
+    saveStoredData();
+    renderStoredJobDescriptions();
+}
+
+function deleteStoredResume(id) {
+    storedResumes = storedResumes.filter(resume => resume.id !== id);
+    saveStoredData();
+    renderStoredResumes();
+}
+
+function deleteStoredJobDescription(id) {
+    storedJobDescriptions = storedJobDescriptions.filter(job => job.id !== id);
+    saveStoredData();
+    renderStoredJobDescriptions();
+}
+
+function loadStoredResume(id) {
+    const resume = storedResumes.find(r => r.id === id);
+    if (resume) {
+        resumeText.value = resume.content;
+        updateCharCount(resumeText, resumeCharCount);
+        showNotification(`Loaded resume: ${resume.name}`, 'success');
+        
+        // Update active state
+        document.querySelectorAll('.stored-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-resume-id="${id}"]`)?.classList.add('active');
+    }
+}
+
+function loadStoredJobDescription(id) {
+    const jobDescription = storedJobDescriptions.find(j => j.id === id);
+    if (jobDescription) {
+        document.getElementById('jobDescription').value = jobDescription.content;
+        updateCharCount(document.getElementById('jobDescription'), document.getElementById('jobCharCount'));
+        showNotification(`Loaded job description: ${jobDescription.name}`, 'success');
+        
+        // Update active state
+        document.querySelectorAll('.stored-item').forEach(item => {
+            item.classList.remove('active');
+        });
+        document.querySelector(`[data-job-id="${id}"]`)?.classList.add('active');
+    }
+}
+
+function renderStoredResumes() {
+    const container = document.getElementById('storedResumesList');
+    if (!container) return;
+    
+    if (storedResumes.length === 0) {
+        container.innerHTML = '<div class="no-resumes">No resumes stored yet</div>';
+        return;
+    }
+    
+    container.innerHTML = storedResumes.map(resume => `
+        <div class="stored-item" data-resume-id="${resume.id}">
+            <div class="stored-item-info">
+                <div class="stored-item-name">${resume.name}</div>
+                <div class="stored-item-date">${resume.date}</div>
+            </div>
+            <div class="stored-item-actions">
+                <button class="stored-item-btn" onclick="loadStoredResume('${resume.id}')" title="Load">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="stored-item-btn delete" onclick="deleteStoredResume('${resume.id}')" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function renderStoredJobDescriptions() {
+    const container = document.getElementById('storedJobDescriptionsList');
+    if (!container) return;
+    
+    if (storedJobDescriptions.length === 0) {
+        container.innerHTML = '<div class="no-resumes">No job descriptions stored yet</div>';
+        return;
+    }
+    
+    container.innerHTML = storedJobDescriptions.map(job => `
+        <div class="stored-item" data-job-id="${job.id}">
+            <div class="stored-item-info">
+                <div class="stored-item-name">${job.name}</div>
+                <div class="stored-item-date">${job.date}</div>
+            </div>
+            <div class="stored-item-actions">
+                <button class="stored-item-btn" onclick="loadStoredJobDescription('${job.id}')" title="Load">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="stored-item-btn delete" onclick="deleteStoredJobDescription('${job.id}')" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     // DOM Elements
     const resumeText = document.getElementById('resumeText');
     const jobDescription = document.getElementById('jobDescription');
     const analyzeBtn = document.getElementById('analyzeBtn');
     const loadingDiv = document.getElementById('loading');
-    const apiKeyInput = document.getElementById('apiKey');
-    const saveApiKeyBtn = document.getElementById('saveApiKey');
     const scoreElement = document.getElementById('score');
     const scoreRing = document.getElementById('scoreRing');
     const scoreLabel = document.getElementById('scoreLabel');
@@ -39,6 +204,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageTitle = document.getElementById('pageTitle');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
+    
+    // Save buttons
+    const saveResumeBtn = document.getElementById('saveResumeBtn');
+    const saveJobDescriptionBtn = document.getElementById('saveJobDescriptionBtn');
 
     // Navigation elements
     const navItems = document.querySelectorAll('.nav-item');
@@ -52,15 +221,27 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCharCount(resumeText, resumeCharCount);
     updateCharCount(jobDescription, jobCharCount);
 
+    // Load stored data
+    loadStoredData();
+
     // Event Listeners
     analyzeBtn.addEventListener('click', analyzeResume);
-    saveApiKeyBtn.addEventListener('click', saveApiKey);
     resumeFileInput.addEventListener('change', (e) => handleFileUpload(e, resumeFileInput, resumeText, resumeFileName));
     jobDescriptionFileInput.addEventListener('change', (e) => handleFileUpload(e, jobDescriptionFileInput, jobDescription, jobDescriptionFileName));
     
+    // Save button listeners
+    saveResumeBtn.addEventListener('click', saveResume);
+    saveJobDescriptionBtn.addEventListener('click', saveJobDescription);
+    
     // Character counter listeners
-    resumeText.addEventListener('input', () => updateCharCount(resumeText, resumeCharCount));
-    jobDescription.addEventListener('input', () => updateCharCount(jobDescription, jobCharCount));
+    resumeText.addEventListener('input', () => {
+        updateCharCount(resumeText, resumeCharCount);
+        updateSaveButtonVisibility(saveResumeBtn, resumeText.value);
+    });
+    jobDescription.addEventListener('input', () => {
+        updateCharCount(jobDescription, jobCharCount);
+        updateSaveButtonVisibility(saveJobDescriptionBtn, jobDescription.value);
+    });
 
     // Navigation listeners
     navItems.forEach(item => {
@@ -78,9 +259,43 @@ document.addEventListener('DOMContentLoaded', function() {
     // Scroll button functionality
     setupScrollButtons();
 
-    // Load saved API key into input
-    if (OPENAI_API_KEY) {
-        apiKeyInput.value = OPENAI_API_KEY;
+    // Function to update save button visibility
+    function updateSaveButtonVisibility(button, content) {
+        if (content.trim().length > 50) {
+            button.style.display = 'inline-flex';
+        } else {
+            button.style.display = 'none';
+        }
+    }
+
+    // Function to save resume
+    function saveResume() {
+        const content = resumeText.value.trim();
+        if (content.length < 50) {
+            showNotification('Resume content is too short to save', 'error');
+            return;
+        }
+        
+        const name = prompt('Enter a name for this resume:');
+        if (name && name.trim()) {
+            addStoredResume(name.trim(), content);
+            showNotification('Resume saved successfully!', 'success');
+        }
+    }
+
+    // Function to save job description
+    function saveJobDescription() {
+        const content = jobDescription.value.trim();
+        if (content.length < 50) {
+            showNotification('Job description content is too short to save', 'error');
+            return;
+        }
+        
+        const name = prompt('Enter a name for this job description:');
+        if (name && name.trim()) {
+            addStoredJobDescription(name.trim(), content);
+            showNotification('Job description saved successfully!', 'success');
+        }
     }
 
     // Function to navigate between sections
@@ -105,7 +320,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const titles = {
             'upload': 'Upload Content',
             'results': 'Analysis Results',
-            'api': 'API Configuration'
+            'storage': 'Stored Content'
         };
         pageTitle.textContent = titles[sectionName] || 'ATS Pro';
 
@@ -167,17 +382,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 textarea.dispatchEvent(new Event('scroll'));
             }
         });
-    }
-
-    // Function to save API key
-    function saveApiKey() {
-        const key = apiKeyInput.value.trim();
-        if (key) {
-            setApiKey(key);
-            showNotification('API key saved successfully!', 'success');
-        } else {
-            showNotification('Please enter a valid API key', 'error');
-        }
     }
 
     // Function to show notifications
@@ -245,6 +449,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update character count
             updateCharCount(textarea, textarea === resumeText ? resumeCharCount : jobCharCount);
             
+            // Update save button visibility
+            if (textarea === resumeText) {
+                updateSaveButtonVisibility(saveResumeBtn, textarea.value);
+            } else {
+                updateSaveButtonVisibility(saveJobDescriptionBtn, textarea.value);
+            }
+            
             // Show appropriate message based on file type
             const fileExt = file.name.split('.').pop().toLowerCase();
             const unsupportedTypes = ['pdf', 'docx', 'doc'];
@@ -259,10 +470,13 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Auto-expand textarea to fit content
             textarea.style.height = 'auto';
-            textarea.style.height = (textarea.scrollHeight) + 'px';
+            textarea.style.height = Math.min(textarea.scrollHeight, 400) + 'px';
             
-            // Trigger scroll event to update scroll buttons
-            textarea.dispatchEvent(new Event('scroll'));
+            // Ensure scroll buttons are visible and functional
+            setTimeout(() => {
+                textarea.dispatchEvent(new Event('scroll'));
+                setupScrollButtons();
+            }, 100);
             
         } catch (error) {
             console.error('Error reading file:', error);
@@ -272,6 +486,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Show error message in the textarea
             textarea.value = 'Error: Could not read file. Please try another file or paste the text manually.';
             textarea.style.height = '100px';
+            
+            // Ensure scroll buttons are visible
+            setTimeout(() => {
+                textarea.dispatchEvent(new Event('scroll'));
+            }, 100);
         }
     }
 
@@ -337,15 +556,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Check for API key
-        const currentApiKey = apiKeyInput.value.trim() || OPENAI_API_KEY;
-        if (!currentApiKey) {
-            showNotification('Please enter your OpenAI API key.', 'error');
+        if (!OPENAI_API_KEY) {
+            showNotification('Please configure your OpenAI API key in the browser console or contact support.', 'error');
             return;
-        }
-
-        // Update API key if changed
-        if (currentApiKey !== OPENAI_API_KEY) {
-            setApiKey(currentApiKey);
         }
 
         // Show loading state
@@ -355,16 +568,56 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Call OpenAI API
             try {
-                const prompt = `You are a senior ATS resume optimization expert with 20+ years in HR technology and recruitment. You provide analysis superior to Teal, Jobscan, Resume Worded, and TopResume. Focus on achieving 95%+ ATS scores through comprehensive keyword analysis, structural optimization, content enhancement, and competitive positioning. Provide specific, actionable advice with exact phrases, formatting recommendations, and industry insights. Include line-by-line improvements only when necessary and impactful. Response must be valid JSON with keys: "score" (0-100), "requiredSkills" (array), "missingSkills" (array), "analysis" (detailed string), "suggestions" (comprehensive string). Only output JSON.
+                const prompt = `You are an extremely strict ATS resume analysis expert with 20+ years in HR technology. Your job is to critically evaluate resumes against job descriptions with the same rigor as Jobscan and Teal, but even more strict.
+
+SCORING CRITERIA (Be very strict):
+- Only resumes that match 90%+ of required skills, keywords, and formatting should score above 80
+- Deduct 10-15 points for each missing critical skill
+- Deduct 5-10 points for vague/generic language
+- Deduct 5-10 points for poor formatting or structure
+- Deduct 5-10 points for lack of quantifiable achievements
+- Deduct 5-10 points for missing industry-specific keywords
+- Most resumes should score between 30-70 unless they are truly exceptional
+
+ANALYSIS REQUIREMENTS:
+1. Extract ALL required skills from job description
+2. Identify ALL missing skills in resume
+3. Provide specific, actionable suggestions with exact text to add
+4. Specify exact location where each suggestion should be added (Summary, Experience, Skills, etc.)
+5. Give concrete examples of what to add, not vague advice
+
+RESPONSE FORMAT (valid JSON only):
+{
+  "score": 0-100,
+  "requiredSkills": ["skill1", "skill2"],
+  "missingSkills": ["skill1", "skill2"],
+  "analysis": "Detailed analysis of strengths and weaknesses",
+  "suggestions": [
+    {
+      "location": "Summary section",
+      "action": "Add this exact text",
+      "text": "Results-driven professional with 5+ years of experience in [specific skill]..."
+    },
+    {
+      "location": "Experience section - [Job Title]",
+      "action": "Add this bullet point",
+      "text": "Led cross-functional team of 10 members to deliver [specific project] resulting in 25% increase in efficiency"
+    }
+  ],
+  "deductions": [
+    "Missing critical skill: [skill name] (-15 points)",
+    "Vague language in summary (-10 points)"
+  ]
+}
 
 RESUME:
 ${resume}
 
 JOB DESCRIPTION:
-${jobDesc}"`;
+${jobDesc}`;
 
-                // Call OpenAI API with the current API key
-                const response = await callOpenAI(currentApiKey, prompt);
+                // Call OpenAI API
+                const response = await callOpenAI(OPENAI_API_KEY, prompt);
                 
                 // Debug: Log the raw response
                 console.log('Raw API response:', response);
@@ -425,14 +678,14 @@ ${jobDesc}"`;
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an expert ATS resume analyzer. Provide only valid JSON responses.'
+                        content: 'You are an expert ATS resume analyzer. Provide only valid JSON responses with strict scoring.'
                     },
                     {
                         role: 'user',
                         content: prompt
                     }
                 ],
-                temperature: 0.3,
+                temperature: 0.1,
                 max_tokens: 4000
             })
         });
@@ -465,6 +718,10 @@ ${jobDesc}"`;
             scoreLabel.textContent = 'Excellent';
             scoreLabel.style.color = 'var(--success-600)';
             scoreDescription.textContent = 'Your resume is highly optimized for ATS systems';
+        } else if (targetScore >= 80) {
+            scoreLabel.textContent = 'Very Good';
+            scoreLabel.style.color = 'var(--success-600)';
+            scoreDescription.textContent = 'Strong ATS compatibility with minor improvements needed';
         } else if (targetScore >= 70) {
             scoreLabel.textContent = 'Good';
             scoreLabel.style.color = 'var(--primary-600)';
@@ -485,11 +742,23 @@ ${jobDesc}"`;
         
         // Display analysis and suggestions
         analysisText.innerHTML = formatTextWithBullets(result.analysis);
-        suggestionsText.innerHTML = formatTextWithBullets(result.suggestions);
+        suggestionsText.innerHTML = formatActionableSuggestions(result.suggestions);
         
-        // Display actionable steps
-        const actionableSteps = document.getElementById('actionableSteps');
-        actionableSteps.innerHTML = formatActionableSteps(result.suggestions);
+        // Display deductions if available
+        const deductionsSection = document.getElementById('deductionsSection');
+        if (result.deductions && result.deductions.length > 0) {
+            const deductionsElement = document.getElementById('deductions');
+            if (deductionsElement) {
+                deductionsElement.innerHTML = formatDeductions(result.deductions);
+            }
+            if (deductionsSection) {
+                deductionsSection.style.display = 'block';
+            }
+        } else {
+            if (deductionsSection) {
+                deductionsSection.style.display = 'none';
+            }
+        }
     }
 
     // Display skills
@@ -559,47 +828,35 @@ ${jobDesc}"`;
             .replace(/<\/ul><ul>/g, '');
     }
 
-    // Format actionable steps
-    function formatActionableSteps(text) {
-        if (!text) return '';
+    // Format actionable suggestions with location-specific guidance
+    function formatActionableSuggestions(suggestions) {
+        if (!suggestions || !Array.isArray(suggestions)) return '';
         
-        const sections = [];
-        const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+        return suggestions.map(suggestion => `
+            <div class="suggestion-item">
+                <div class="suggestion-header">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <strong>${suggestion.location}</strong>
+                </div>
+                <div class="suggestion-action">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>${suggestion.action}</span>
+                </div>
+                <div class="suggestion-text">
+                    <code>${suggestion.text}</code>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Format deductions
+    function formatDeductions(deductions) {
+        if (!deductions || !Array.isArray(deductions)) return '';
         
-        let currentSection = null;
-        let currentItems = [];
-        
-        lines.forEach(line => {
-            if (line.match(/^[A-Z][^:]*:$/) || line.match(/^[A-Z][^:]*\s*\(/)) {
-                // This is a section header
-                if (currentSection) {
-                    sections.push({
-                        title: currentSection,
-                        items: currentItems
-                    });
-                }
-                currentSection = line.replace(/[:()]/g, '').trim();
-                currentItems = [];
-            } else if (line.startsWith('-') || line.startsWith('•') || line.startsWith('*') || line.match(/^\d+\./)) {
-                // This is a list item
-                currentItems.push(line.replace(/^[-•*]\s*/, '').replace(/^\d+\.\s*/, ''));
-            }
-        });
-        
-        // Add the last section
-        if (currentSection) {
-            sections.push({
-                title: currentSection,
-                items: currentItems
-            });
-        }
-        
-        return sections.map(section => `
-            <div class="suggestion-section">
-                <h4>${section.title}</h4>
-                <ul>
-                    ${section.items.map(item => `<li>${item}</li>`).join('')}
-                </ul>
+        return deductions.map(deduction => `
+            <div class="deduction-item">
+                <i class="fas fa-minus-circle"></i>
+                <span>${deduction}</span>
             </div>
         `).join('');
     }
