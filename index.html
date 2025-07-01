@@ -4,43 +4,64 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ATS Pro - Advanced Resume Optimizer</title>
+    <meta name="description" content="ATS Pro is an advanced resume optimizer powered by GPT-4. Instantly analyze and improve your resume for ATS compatibility.">
+    <meta property="og:title" content="ATS Pro - Advanced Resume Optimizer">
+    <meta property="og:description" content="ATS Pro is an advanced resume optimizer powered by GPT-4. Instantly analyze and improve your resume for ATS compatibility.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yourdomain.com/">
+    <meta property="og:image" content="https://yourdomain.com/og-image.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ATS Pro - Advanced Resume Optimizer">
+    <meta name="twitter:description" content="ATS Pro is an advanced resume optimizer powered by GPT-4. Instantly analyze and improve your resume for ATS compatibility.">
+    <meta name="twitter:image" content="https://yourdomain.com/og-image.png">
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 </head>
 <body>
+    <noscript>
+        <div style="background: #dc2626; color: #fff; padding: 1em; text-align: center; font-weight: bold;">
+            JavaScript is required for ATS Pro to function. Please enable JavaScript in your browser.
+        </div>
+    </noscript>
     <div class="app-container">
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" role="complementary" aria-label="Main sidebar">
             <div class="sidebar-header">
-                <div class="logo">
-                    <i class="fas fa-chart-line"></i>
+                <div class="logo" aria-label="ATS Pro Logo">
+                    <i class="fas fa-chart-line" aria-hidden="true"></i>
                     <span>ATS Pro</span>
                 </div>
-                <button id="menuToggle" class="menu-toggle">
-                    <i class="fas fa-bars"></i>
+                <button id="menuToggle" class="menu-toggle" aria-label="Open navigation menu">
+                    <i class="fas fa-bars" aria-hidden="true"></i>
+                </button>
+                <button id="apiKeyBtn" class="api-key-btn" title="Configure API Key" aria-label="Configure API Key">
+                    <i class="fas fa-key" aria-hidden="true"></i>
+                </button>
+                <button id="darkModeToggle" class="dark-mode-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
                 </button>
             </div>
             
-            <nav class="sidebar-nav">
-                <div class="nav-item active" data-section="upload">
-                    <i class="fas fa-upload"></i>
+            <nav class="sidebar-nav" role="navigation" aria-label="Sidebar navigation">
+                <div class="nav-item active" data-section="upload" tabindex="0" role="button" aria-label="Upload Content">
+                    <i class="fas fa-upload" aria-hidden="true"></i>
                     <span>Upload Content</span>
                 </div>
-                <div class="nav-item" data-section="results">
-                    <i class="fas fa-chart-bar"></i>
+                <div class="nav-item" data-section="results" tabindex="0" role="button" aria-label="Analysis Results">
+                    <i class="fas fa-chart-bar" aria-hidden="true"></i>
                     <span>Analysis Results</span>
                 </div>
-                <div class="nav-item" data-section="storage">
-                    <i class="fas fa-folder"></i>
+                <div class="nav-item" data-section="storage" tabindex="0" role="button" aria-label="Stored Content">
+                    <i class="fas fa-folder" aria-hidden="true"></i>
                     <span>Stored Content</span>
                 </div>
             </nav>
         </aside>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" role="main" aria-label="Main content">
             <header class="content-header">
                 <h1 id="pageTitle">Upload Content</h1>
             </header>
@@ -72,16 +93,16 @@
                                     <label for="resumeText">Or paste your resume text:</label>
                                     <div class="textarea-container">
                                         <textarea id="resumeText" placeholder="Paste your resume content here..." rows="12"></textarea>
-                                        <button class="scroll-up" title="Scroll to top">
-                                            <i class="fas fa-chevron-up"></i>
+                                        <button class="scroll-up" title="Scroll to top" aria-label="Scroll to top">
+                                            <i class="fas fa-chevron-up" aria-hidden="true"></i>
                                         </button>
-                                        <button class="scroll-down" title="Scroll to bottom">
-                                            <i class="fas fa-chevron-down"></i>
+                                        <button class="scroll-down" title="Scroll to bottom" aria-label="Scroll to bottom">
+                                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     <div class="char-count" id="resumeCharCount">0 characters</div>
-                                    <button id="saveResumeBtn" class="save-btn" style="display: none;">
-                                        <i class="fas fa-save"></i>
+                                    <button id="saveResumeBtn" class="save-btn" style="display: none;" aria-label="Save Resume">
+                                        <i class="fas fa-save" aria-hidden="true"></i>
                                         Save Resume
                                     </button>
                                 </div>
@@ -113,16 +134,16 @@
                                     <label for="jobDescription">Or paste the job description:</label>
                                     <div class="textarea-container">
                                         <textarea id="jobDescription" placeholder="Paste the job description here..." rows="12"></textarea>
-                                        <button class="scroll-up" title="Scroll to top">
-                                            <i class="fas fa-chevron-up"></i>
+                                        <button class="scroll-up" title="Scroll to top" aria-label="Scroll to top">
+                                            <i class="fas fa-chevron-up" aria-hidden="true"></i>
                                         </button>
-                                        <button class="scroll-down" title="Scroll to bottom">
-                                            <i class="fas fa-chevron-down"></i>
+                                        <button class="scroll-down" title="Scroll to bottom" aria-label="Scroll to bottom">
+                                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                     <div class="char-count" id="jobCharCount">0 characters</div>
-                                    <button id="saveJobDescriptionBtn" class="save-btn" style="display: none;">
-                                        <i class="fas fa-save"></i>
+                                    <button id="saveJobDescriptionBtn" class="save-btn" style="display: none;" aria-label="Save Job Description">
+                                        <i class="fas fa-save" aria-hidden="true"></i>
                                         Save Job Description
                                     </button>
                                 </div>
@@ -131,8 +152,8 @@
                     </div>
 
                     <div class="analyze-section">
-                        <button id="analyzeBtn" class="analyze-btn">
-                            <i class="fas fa-search"></i>
+                        <button id="analyzeBtn" class="analyze-btn" aria-label="Analyze Resume">
+                            <i class="fas fa-search" aria-hidden="true"></i>
                             Analyze Resume
                         </button>
                         <div id="loading" class="loading hidden">
@@ -174,7 +195,7 @@
                             <div class="skills-card">
                                 <div class="skills-header">
                                     <i class="fas fa-check-circle"></i>
-                                    <h4>Required Skills</h4>
+                                    <h4>Found Skills</h4>
                                 </div>
                                 <div class="skills-content" id="requiredSkills">
                                     <span class="skill-tag">Loading...</span>
@@ -266,6 +287,20 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <div id="apiKeyModal" class="modal" aria-modal="true" role="dialog" tabindex="-1" style="display:none;">
+        <div class="modal-content">
+            <button class="modal-close" id="closeApiKeyModal" aria-label="Close API Key Modal">&times;</button>
+            <h2>OpenAI API Key</h2>
+            <p>Enter your OpenAI API key. It will be stored securely in your browser and never sent anywhere else.</p>
+            <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" aria-label="OpenAI API Key" />
+            <div class="modal-actions">
+                <button id="saveApiKeyBtn" class="save-btn"><i class="fas fa-save"></i> Save Key</button>
+                <button id="clearApiKeyBtn" class="delete-btn"><i class="fas fa-trash"></i> Clear Key</button>
+            </div>
+            <div id="apiKeyStatus" class="api-key-status"></div>
+        </div>
     </div>
 
     <script src="script.js"></script>

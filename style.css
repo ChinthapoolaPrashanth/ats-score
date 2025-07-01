@@ -1666,4 +1666,170 @@ body {
         height: 1.5rem;
         font-size: 0.75rem;
     }
+}
+
+.api-key-btn {
+    background: none;
+    border: none;
+    color: var(--text-inverse);
+    font-size: 1.25rem;
+    margin-left: var(--space-3);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+.api-key-btn:hover {
+    color: var(--primary-200);
+}
+
+.modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(30, 41, 59, 0.5);
+    z-index: 20000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.3s;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-2xl);
+    padding: var(--space-10);
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+.modal-close {
+    position: absolute;
+    top: var(--space-3);
+    right: var(--space-3);
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+.modal-close:hover {
+    color: var(--error-600);
+}
+.modal-content h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+.modal-content p {
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+#apiKeyInput {
+    padding: var(--space-3);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+    width: 100%;
+    margin-bottom: var(--space-3);
+}
+.modal-actions {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-2);
+}
+.api-key-status {
+    font-size: 0.95rem;
+    color: var(--success-600);
+    min-height: 1.5em;
+}
+.api-key-status.error {
+    color: var(--error-600);
+}
+.delete-btn {
+    background: var(--error-600);
+    color: var(--text-inverse);
+    border: none;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+.delete-btn:hover {
+    background: var(--error-700);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #181f2a;
+    --bg-secondary: #232b3a;
+    --bg-tertiary: #202736;
+    --bg-card: #232b3a;
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-tertiary: #94a3b8;
+    --border-light: #334155;
+    --border-medium: #475569;
+    --border-dark: #64748b;
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.7);
+  }
+  body {
+    background: linear-gradient(135deg, #232b3a 0%, #181f2a 100%);
+    color: var(--text-primary);
+  }
+}
+
+body.dark-mode {
+  --bg-primary: #181f2a;
+  --bg-secondary: #232b3a;
+  --bg-tertiary: #202736;
+  --bg-card: #232b3a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-tertiary: #94a3b8;
+  --border-light: #334155;
+  --border-medium: #475569;
+  --border-dark: #64748b;
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.7);
+  background: linear-gradient(135deg, #232b3a 0%, #181f2a 100%);
+  color: var(--text-primary);
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  background: none;
+  border: none;
+  color: var(--text-inverse);
+  font-size: 1.25rem;
+  margin-left: var(--space-3);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.dark-mode-toggle:hover {
+  color: var(--primary-200);
+}
+
+/* Reduced motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 } 

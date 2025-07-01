@@ -185,7 +185,7 @@ function renderStoredJobDescriptions() {
     `).join('');
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     // DOM Elements
     const resumeText = document.getElementById('resumeText');
     const jobDescription = document.getElementById('jobDescription');
@@ -204,22 +204,111 @@ document.addEventListener('DOMContentLoaded', function() {
     const pageTitle = document.getElementById('pageTitle');
     const menuToggle = document.getElementById('menuToggle');
     const sidebar = document.querySelector('.sidebar');
-    
-    // Save buttons
     const saveResumeBtn = document.getElementById('saveResumeBtn');
     const saveJobDescriptionBtn = document.getElementById('saveJobDescriptionBtn');
-
-    // Navigation elements
     const navItems = document.querySelectorAll('.nav-item');
     const contentSections = document.querySelectorAll('.content-section');
-
-    // DOM Elements for file names
     const resumeFileName = document.getElementById('resumeFileName');
     const jobDescriptionFileName = document.getElementById('jobDescriptionFileName');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkModeIcon = darkModeToggle.querySelector('i');
 
-    // Initialize character counters
-    updateCharCount(resumeText, resumeCharCount);
-    updateCharCount(jobDescription, jobCharCount);
+    // --- Keyboard accessibility for nav-items ---
+    navItems.forEach(item => {
+        item.addEventListener('keydown', e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                item.click();
+            }
+        });
+        // Add click event for mouse navigation
+        item.addEventListener('click', () => {
+            const section = item.getAttribute('data-section');
+            navigateToSection(section);
+        });
+    });
+
+    // --- Input sanitization utility ---
+    const sanitize = str => {
+        const temp = document.createElement('div');
+        temp.textContent = str;
+        return temp.innerHTML;
+    };
+
+    // --- Update save button visibility ---
+    const updateSaveButtonVisibility = (button, content) => {
+        if (content.trim().length > 50) {
+            button.style.display = 'inline-flex';
+        } else {
+            button.style.display = 'none';
+        }
+    };
+
+    // --- Save resume with sanitization ---
+    const saveResume = () => {
+        const content = resumeText.value.trim();
+        if (content.length < 50) {
+            showNotification('Resume content is too short to save', 'error');
+            return;
+        }
+        const name = prompt('Enter a name for this resume:');
+        if (name && name.trim()) {
+            addStoredResume(sanitize(name.trim()), sanitize(content));
+            showNotification('Resume saved successfully!', 'success');
+        }
+    };
+
+    // --- Save job description with sanitization ---
+    const saveJobDescription = () => {
+        const content = jobDescription.value.trim();
+        if (content.length < 50) {
+            showNotification('Job description content is too short to save', 'error');
+            return;
+        }
+        const name = prompt('Enter a name for this job description:');
+        if (name && name.trim()) {
+            addStoredJobDescription(sanitize(name.trim()), sanitize(content));
+            showNotification('Job description saved successfully!', 'success');
+        }
+    };
+
+    // --- Navigation between sections ---
+    const navigateToSection = sectionName => {
+        navItems.forEach(item => {
+            item.classList.remove('active');
+            if (item.getAttribute('data-section') === sectionName) {
+                item.classList.add('active');
+            }
+        });
+        contentSections.forEach(section => {
+            section.classList.remove('active');
+            if (section.id === sectionName + 'Section') {
+                section.classList.add('active');
+            }
+        });
+        const titles = {
+            'upload': 'Upload Content',
+            'results': 'Analysis Results',
+            'storage': 'Stored Content'
+        };
+        pageTitle.textContent = titles[sectionName] || 'ATS Pro';
+        sidebar.classList.remove('open');
+    };
+
+    // --- Character count update ---
+    const updateCharCount = (textarea, counterElement) => {
+        const count = textarea.value.length;
+        counterElement.textContent = `${count.toLocaleString()} characters`;
+        if (count === 0) {
+            counterElement.style.color = 'var(--text-tertiary)';
+        } else if (count < 100) {
+            counterElement.style.color = 'var(--warning-600)';
+        } else if (count < 500) {
+            counterElement.style.color = 'var(--primary-600)';
+        } else {
+            counterElement.style.color = 'var(--success-600)';
+        }
+    };
 
     // Load stored data
     loadStoredData();
@@ -243,14 +332,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSaveButtonVisibility(saveJobDescriptionBtn, jobDescription.value);
     });
 
-    // Navigation listeners
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const section = item.getAttribute('data-section');
-            navigateToSection(section);
-        });
-    });
-
     // Mobile menu toggle
     menuToggle.addEventListener('click', () => {
         sidebar.classList.toggle('open');
@@ -258,92 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Scroll button functionality
     setupScrollButtons();
-
-    // Function to update save button visibility
-    function updateSaveButtonVisibility(button, content) {
-        if (content.trim().length > 50) {
-            button.style.display = 'inline-flex';
-        } else {
-            button.style.display = 'none';
-        }
-    }
-
-    // Function to save resume
-    function saveResume() {
-        const content = resumeText.value.trim();
-        if (content.length < 50) {
-            showNotification('Resume content is too short to save', 'error');
-            return;
-        }
-        
-        const name = prompt('Enter a name for this resume:');
-        if (name && name.trim()) {
-            addStoredResume(name.trim(), content);
-            showNotification('Resume saved successfully!', 'success');
-        }
-    }
-
-    // Function to save job description
-    function saveJobDescription() {
-        const content = jobDescription.value.trim();
-        if (content.length < 50) {
-            showNotification('Job description content is too short to save', 'error');
-            return;
-        }
-        
-        const name = prompt('Enter a name for this job description:');
-        if (name && name.trim()) {
-            addStoredJobDescription(name.trim(), content);
-            showNotification('Job description saved successfully!', 'success');
-        }
-    }
-
-    // Function to navigate between sections
-    function navigateToSection(sectionName) {
-        // Update navigation
-        navItems.forEach(item => {
-            item.classList.remove('active');
-            if (item.getAttribute('data-section') === sectionName) {
-                item.classList.add('active');
-            }
-        });
-
-        // Update content sections
-        contentSections.forEach(section => {
-            section.classList.remove('active');
-            if (section.id === sectionName + 'Section') {
-                section.classList.add('active');
-            }
-        });
-
-        // Update page title
-        const titles = {
-            'upload': 'Upload Content',
-            'results': 'Analysis Results',
-            'storage': 'Stored Content'
-        };
-        pageTitle.textContent = titles[sectionName] || 'ATS Pro';
-
-        // Close mobile menu
-        sidebar.classList.remove('open');
-    }
-
-    // Function to update character count
-    function updateCharCount(textarea, counterElement) {
-        const count = textarea.value.length;
-        counterElement.textContent = count.toLocaleString() + ' characters';
-        
-        // Change color based on content length
-        if (count === 0) {
-            counterElement.style.color = 'var(--text-tertiary)';
-        } else if (count < 100) {
-            counterElement.style.color = 'var(--warning-600)';
-        } else if (count < 500) {
-            counterElement.style.color = 'var(--primary-600)';
-        } else {
-            counterElement.style.color = 'var(--success-600)';
-        }
-    }
 
     // Function to setup scroll buttons
     function setupScrollButtons() {
@@ -566,30 +561,56 @@ document.addEventListener('DOMContentLoaded', function() {
         analyzeBtn.disabled = true;
 
         try {
-            // Call OpenAI API
+            // Step 1: Extract ALL required skills from job description
+            const skillsExtractionPrompt = `You are an expert ATS resume analyzer. Your task is to extract ALL required skills from the job description.
+
+INSTRUCTIONS:
+1. Read the job description carefully
+2. Extract ALL technical skills, soft skills, tools, technologies, certifications, and qualifications mentioned
+3. Include variations and synonyms of skills
+4. Be exhaustive - do not miss any skill mentioned
+5. Output ONLY a valid JSON array of strings
+
+OUTPUT FORMAT:
+["skill1", "skill2", "skill3", ...]
+
+JOB DESCRIPTION:
+${jobDesc}`;
+
+            const skillsResponse = await callOpenAI(OPENAI_API_KEY, skillsExtractionPrompt);
+            let requiredSkills = [];
+            
             try {
-                const prompt = `You are an extremely strict ATS resume analysis expert with 20+ years in HR technology. Your job is to critically evaluate resumes against job descriptions with the same rigor as Jobscan and Teal, but even more strict.
+                const skillsData = JSON.parse(skillsResponse);
+                requiredSkills = Array.isArray(skillsData) ? skillsData : [];
+            } catch (e) {
+                console.error('Error parsing skills response:', e);
+                // Fallback: extract skills manually
+                requiredSkills = extractSkillsFromText(jobDesc);
+            }
+
+            // Step 2: Analyze resume against required skills
+            const analysisPrompt = `You are an expert ATS resume analyzer with 20+ years in HR technology. Analyze the resume against the required skills with maximum strictness and consistency.
+
+ANALYSIS REQUIREMENTS:
+1. Check for EXACT matches of each required skill (case-insensitive)
+2. Include partial matches and synonyms
+3. Be extremely strict - only mark skills as "found" if they are clearly present
+4. Provide detailed analysis of strengths and weaknesses
+5. Give specific, actionable suggestions with exact text to add
 
 SCORING CRITERIA (Be very strict):
-- Only resumes that match 90%+ of required skills, keywords, and formatting should score above 80
+- Only resumes that match 90%+ of required skills should score above 80
 - Deduct 10-15 points for each missing critical skill
 - Deduct 5-10 points for vague/generic language
 - Deduct 5-10 points for poor formatting or structure
 - Deduct 5-10 points for lack of quantifiable achievements
-- Deduct 5-10 points for missing industry-specific keywords
 - Most resumes should score between 30-70 unless they are truly exceptional
-
-ANALYSIS REQUIREMENTS:
-1. Extract ALL required skills from job description
-2. Identify ALL missing skills in resume
-3. Provide specific, actionable suggestions with exact text to add
-4. Specify exact location where each suggestion should be added (Summary, Experience, Skills, etc.)
-5. Give concrete examples of what to add, not vague advice
 
 RESPONSE FORMAT (valid JSON only):
 {
   "score": 0-100,
-  "requiredSkills": ["skill1", "skill2"],
+  "foundSkills": ["skill1", "skill2"],
   "missingSkills": ["skill1", "skill2"],
   "analysis": "Detailed analysis of strengths and weaknesses",
   "suggestions": [
@@ -597,11 +618,6 @@ RESPONSE FORMAT (valid JSON only):
       "location": "Summary section",
       "action": "Add this exact text",
       "text": "Results-driven professional with 5+ years of experience in [specific skill]..."
-    },
-    {
-      "location": "Experience section - [Job Title]",
-      "action": "Add this bullet point",
-      "text": "Led cross-functional team of 10 members to deliver [specific project] resulting in 25% increase in efficiency"
     }
   ],
   "deductions": [
@@ -610,51 +626,27 @@ RESPONSE FORMAT (valid JSON only):
   ]
 }
 
+REQUIRED SKILLS: ${JSON.stringify(requiredSkills)}
+
 RESUME:
-${resume}
+${resume}`;
 
-JOB DESCRIPTION:
-${jobDesc}`;
-
-                // Call OpenAI API
-                const response = await callOpenAI(OPENAI_API_KEY, prompt);
-                
-                // Debug: Log the raw response
-                console.log('Raw API response:', response);
-                
-                // Parse the response
-                let result;
-                try {
-                    // Clean the response to ensure it's valid JSON
-                    let jsonString = response.trim();
-                    
-                    // Remove any markdown code blocks if present
-                    if (jsonString.startsWith('```json')) {
-                        jsonString = jsonString.replace(/```json\n?/, '').replace(/\n?```/, '');
-                    } else if (jsonString.startsWith('```')) {
-                        jsonString = jsonString.replace(/```\n?/, '').replace(/\n?```/, '');
-                    }
-                    
-                    result = JSON.parse(jsonString);
-                } catch (parseError) {
-                    console.error('JSON parse error:', parseError);
-                    console.log('Attempted to parse:', response);
-                    throw new Error('Invalid response format from API');
-                }
-                
-                // Validate the result structure
-                if (!result.score || !result.requiredSkills || !result.missingSkills || !result.analysis || !result.suggestions) {
-                    throw new Error('Incomplete response from API');
-                }
-                
-                // Display results
-                displayResults(result);
-                
-            } catch (apiError) {
-                console.error('API Error:', apiError);
-                throw new Error(`API Error: ${apiError.message}`);
-            }
+            const analysisResponse = await callOpenAI(OPENAI_API_KEY, analysisPrompt);
+            let result = {};
             
+            try {
+                result = JSON.parse(analysisResponse);
+            } catch (e) {
+                console.error('Error parsing analysis response:', e);
+                throw new Error('Invalid response format from AI analysis');
+            }
+
+            // Step 3: Post-processing for reliability
+            const processedResult = postProcessAnalysis(result, requiredSkills, resume);
+            
+            // Display results
+            displayResults(processedResult);
+
         } catch (error) {
             console.error('Analysis error:', error);
             showNotification(`Analysis failed: ${error.message}`, 'error');
@@ -663,6 +655,92 @@ ${jobDesc}`;
             loadingDiv.classList.add('hidden');
             analyzeBtn.disabled = false;
         }
+    }
+
+    // Post-processing function for reliability
+    function postProcessAnalysis(result, requiredSkills, resume) {
+        const resumeLower = resume.toLowerCase();
+        
+        // Re-check found/missing skills for accuracy
+        const foundSkills = [];
+        const missingSkills = [];
+        
+        requiredSkills.forEach(skill => {
+            const skillLower = skill.toLowerCase();
+            // Check for exact match, partial match, or common variations
+            if (resumeLower.includes(skillLower) || 
+                checkSkillVariations(skillLower, resumeLower)) {
+                foundSkills.push(skill);
+            } else {
+                missingSkills.push(skill);
+            }
+        });
+
+        // Recalculate score based on actual found/missing skills
+        const skillMatchPercentage = (foundSkills.length / requiredSkills.length) * 100;
+        let recalculatedScore = Math.round(skillMatchPercentage * 0.7); // Skills are 70% of score
+        
+        // Adjust score based on other factors from AI analysis
+        if (result.score) {
+            const otherFactors = result.score - (skillMatchPercentage * 0.7);
+            recalculatedScore = Math.max(0, Math.min(100, recalculatedScore + otherFactors));
+        }
+
+        return {
+            ...result,
+            score: recalculatedScore,
+            foundSkills: foundSkills,
+            missingSkills: missingSkills,
+            requiredSkills: requiredSkills
+        };
+    }
+
+    // Helper function to check skill variations
+    function checkSkillVariations(skill, resumeText) {
+        const variations = {
+            'javascript': ['js', 'javascript', 'es6', 'es2015', 'node.js'],
+            'python': ['python', 'py', 'django', 'flask', 'pandas'],
+            'java': ['java', 'spring', 'hibernate', 'maven'],
+            'sql': ['sql', 'mysql', 'postgresql', 'oracle', 'database'],
+            'react': ['react', 'react.js', 'reactjs', 'jsx'],
+            'angular': ['angular', 'angular.js', 'angularjs'],
+            'vue': ['vue', 'vue.js', 'vuejs'],
+            'aws': ['aws', 'amazon web services', 'ec2', 's3'],
+            'azure': ['azure', 'microsoft azure'],
+            'docker': ['docker', 'containerization'],
+            'kubernetes': ['kubernetes', 'k8s'],
+            'git': ['git', 'github', 'gitlab', 'version control'],
+            'agile': ['agile', 'scrum', 'kanban', 'sprint'],
+            'project management': ['project management', 'pm', 'project manager'],
+            'leadership': ['leadership', 'lead', 'manage', 'supervise'],
+            'communication': ['communication', 'communicate', 'presentation'],
+            'problem solving': ['problem solving', 'problem-solving', 'analytical'],
+            'teamwork': ['teamwork', 'collaboration', 'team player'],
+            'customer service': ['customer service', 'customer support', 'client relations']
+        };
+
+        // Check exact skill
+        if (resumeText.includes(skill)) return true;
+
+        // Check variations
+        const skillVariations = variations[skill] || [];
+        return skillVariations.some(variation => resumeText.includes(variation));
+    }
+
+    // Fallback function to extract skills from text
+    function extractSkillsFromText(text) {
+        const commonSkills = [
+            'javascript', 'python', 'java', 'sql', 'react', 'angular', 'vue',
+            'aws', 'azure', 'docker', 'kubernetes', 'git', 'agile', 'scrum',
+            'project management', 'leadership', 'communication', 'teamwork',
+            'problem solving', 'customer service', 'html', 'css', 'node.js',
+            'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch',
+            'machine learning', 'ai', 'data analysis', 'excel', 'powerpoint',
+            'word', 'photoshop', 'illustrator', 'figma', 'sketch'
+        ];
+
+        const textLower = text.toLowerCase();
+        return commonSkills.filter(skill => textLower.includes(skill));
     }
 
     // Call OpenAI API
@@ -678,14 +756,14 @@ ${jobDesc}`;
                 messages: [
                     {
                         role: 'system',
-                        content: 'You are an expert ATS resume analyzer. Provide only valid JSON responses with strict scoring.'
+                        content: 'You are an expert ATS resume analyzer. Provide only valid JSON responses with maximum consistency and strictness. Be exhaustive and deterministic in your analysis.'
                     },
                     {
                         role: 'user',
                         content: prompt
                     }
                 ],
-                temperature: 0.1,
+                temperature: 0, // Maximum determinism
                 max_tokens: 4000
             })
         });
@@ -736,9 +814,9 @@ ${jobDesc}`;
             scoreDescription.textContent = 'Poor ATS compatibility, major changes required';
         }
         
-        // Display skills
-        displaySkills('requiredSkills', result.requiredSkills, false);
-        displaySkills('missingSkills', result.missingSkills, true);
+        // Display skills - show found skills and missing skills
+        displaySkills('requiredSkills', result.foundSkills || [], false);
+        displaySkills('missingSkills', result.missingSkills || [], true);
         
         // Display analysis and suggestions
         analysisText.innerHTML = formatTextWithBullets(result.analysis);
@@ -860,4 +938,91 @@ ${jobDesc}`;
             </div>
         `).join('');
     }
+
+    // API Key Modal Elements
+    const apiKeyBtn = document.getElementById('apiKeyBtn');
+    const apiKeyModal = document.getElementById('apiKeyModal');
+    const closeApiKeyModal = document.getElementById('closeApiKeyModal');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+    const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+    const apiKeyStatus = document.getElementById('apiKeyStatus');
+
+    // Show modal
+    apiKeyBtn.addEventListener('click', () => {
+        apiKeyModal.style.display = 'flex';
+        apiKeyInput.value = OPENAI_API_KEY || localStorage.getItem('openai_api_key') || '';
+        apiKeyStatus.textContent = '';
+        apiKeyInput.focus();
+    });
+    // Hide modal
+    function closeModal() {
+        apiKeyModal.style.display = 'none';
+        apiKeyStatus.textContent = '';
+    }
+    closeApiKeyModal.addEventListener('click', closeModal);
+    apiKeyModal.addEventListener('click', (e) => {
+        if (e.target === apiKeyModal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (apiKeyModal.style.display === 'flex' && e.key === 'Escape') closeModal();
+    });
+    // Save API key
+    saveApiKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (!key.startsWith('sk-') || key.length < 20) {
+            apiKeyStatus.textContent = 'Please enter a valid OpenAI API key.';
+            apiKeyStatus.classList.add('error');
+            return;
+        }
+        setApiKey(key);
+        apiKeyStatus.textContent = 'API key saved!';
+        apiKeyStatus.classList.remove('error');
+        setTimeout(closeModal, 1000);
+    });
+    // Clear API key
+    clearApiKeyBtn.addEventListener('click', () => {
+        localStorage.removeItem('openai_api_key');
+        OPENAI_API_KEY = '';
+        apiKeyInput.value = '';
+        apiKeyStatus.textContent = 'API key cleared.';
+        apiKeyStatus.classList.remove('error');
+        setTimeout(closeModal, 1000);
+    });
+    // Trap focus in modal
+    apiKeyModal.addEventListener('keydown', (e) => {
+        if (apiKeyModal.style.display !== 'flex') return;
+        const focusable = apiKeyModal.querySelectorAll('input,button');
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.key === 'Tab') {
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        }
+    });
+
+    // --- Dark mode logic ---
+    const setDarkMode = (enabled) => {
+        document.body.classList.toggle('dark-mode', enabled);
+        darkModeToggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+        darkModeIcon.className = enabled ? 'fas fa-sun' : 'fas fa-moon';
+        localStorage.setItem('dark_mode', enabled ? '1' : '0');
+    };
+    // On load: apply saved or system preference
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedDark = localStorage.getItem('dark_mode');
+    if (savedDark === '1' || (savedDark === null && prefersDark)) {
+        setDarkMode(true);
+    } else {
+        setDarkMode(false);
+    }
+    // Toggle on click
+    darkModeToggle.addEventListener('click', () => {
+        setDarkMode(!document.body.classList.contains('dark-mode'));
+    });
 });
