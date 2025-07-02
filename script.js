@@ -1,6 +1,6 @@
 // API key management
-const MODEL_NAME = 'gpt-4';
-let OPENAI_API_KEY = '';
+const MODEL_NAME = CONFIG?.MODEL_NAME || 'gpt-4';
+let OPENAI_API_KEY = CONFIG?.OPENAI_API_KEY || '';
 
 // Storage management
 let storedResumes = [];
@@ -14,11 +14,13 @@ function setApiKey(key) {
     }
 }
 
-// Load API key from localStorage
+// Load API key from localStorage or config
 if (typeof window !== 'undefined') {
     const storedKey = localStorage.getItem('openai_api_key');
     if (storedKey) {
         setApiKey(storedKey);
+    } else if (CONFIG?.OPENAI_API_KEY && CONFIG.OPENAI_API_KEY !== 'your_openai_api_key_here') {
+        setApiKey(CONFIG.OPENAI_API_KEY);
     }
 }
 
