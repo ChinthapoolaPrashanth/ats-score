@@ -5,9 +5,6 @@
 .env.test.local
 .env.production.local
 
-# Configuration files with sensitive data
-config.js
-
 # Dependencies
 node_modules/
 npm-debug.log*
