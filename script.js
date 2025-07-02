@@ -2,6 +2,20 @@
 const MODEL_NAME = 'gpt-4';
 let OPENAI_API_KEY = '';
 
+// Check for environment variable first
+if (typeof window !== 'undefined') {
+    // Check if API key is provided via environment variable or global variable
+    OPENAI_API_KEY = window.OPENAI_API_KEY || process.env.OPENAI_API_KEY || '';
+    
+    // If no environment key, try to load from localStorage
+    if (!OPENAI_API_KEY) {
+        const storedKey = localStorage.getItem('openai_api_key');
+        if (storedKey) {
+            OPENAI_API_KEY = storedKey;
+        }
+    }
+}
+
 // Storage management
 let storedResumes = [];
 let storedJobDescriptions = [];
@@ -552,7 +566,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Check for API key
         if (!OPENAI_API_KEY) {
-            showNotification('Please configure your OpenAI API key in the browser console or contact support.', 'error');
+            showNotification('OpenAI API key not configured. Please contact the administrator or configure your own API key.', 'error');
             return;
         }
 
@@ -955,6 +969,11 @@ ${resume}`;
         apiKeyStatus.textContent = '';
         apiKeyInput.focus();
     });
+    
+    // Hide API key button if environment key is available
+    if (OPENAI_API_KEY && !localStorage.getItem('openai_api_key')) {
+        apiKeyBtn.style.display = 'none';
+    }
     // Hide modal
     function closeModal() {
         apiKeyModal.style.display = 'none';
